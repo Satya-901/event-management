@@ -1,0 +1,14 @@
+[
+    {
+        "id": "scan_23b26bdbc1bdf8da_1789631341",
+        "booking_id": "UTS-2026-000125",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "event_id": "evt_3e179de3e7f38ca9_1789631341",
+        "qr_token": "uts_token_amitabh_checkedin_demo_2026",
+        "status": "already_checked_in",
+        "scanned_by": "Rajesh Sharma (organizer)",
+        "scanned_at": "2026-09-17 07:49:01",
+        "device_info": "Unknown",
+        "ip_address": "127.0.0.1"
+    }
+]

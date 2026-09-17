@@ -1,0 +1,6 @@
+{
+  "name": "Utsavam",
+  "description": "Multi-tenant event booking and QR verification platform with dynamic booking forms and camera pass check-in.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,14 @@
+[
+    {
+        "id": "act_ce93a75dee24765d_1789631341",
+        "actor_id": "system",
+        "actor_role": "system",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "action": "system_initialized",
+        "entity_type": "platform",
+        "entity_id": "utsavam",
+        "description": "System seeded with Royal Events organizer and Dandiya Night 2026 demo",
+        "created_at": "2026-09-17 07:49:01",
+        "ip_address": "127.0.0.1"
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "id": "usr_176f9644eed77c47_1789631341",
+        "client_id": null,
+        "name": "System Administrator",
+        "username": "admin",
+        "email": "admin@utsavam.com",
+        "password": "$2y$10$BlfR/Oi9yc7rOgg7kEq/qOscRB.h1xoM2sugtJLNWzPkLerP14oyS",
+        "role": "super_admin",
+        "status": "active",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "usr_c15e5ef71de4c4eb_1789631341",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "Rajesh Sharma",
+        "username": "organizer",
+        "email": "organizer@royalevents.in",
+        "password": "$2y$10$5GULBIH1vY9nRZaxNNG1ZOoxWmFicDwofvRN5SVqhY62WUcRb/y/.",
+        "role": "client",
+        "status": "active",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
+    }
+]

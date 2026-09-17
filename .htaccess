@@ -1,0 +1,33 @@
+# ==========================================================
+# Utsavam - Apache .htaccess for Clean URLs & Security
+# ==========================================================
+
+Options -Indexes
+Options +FollowSymLinks
+
+# Prevent direct access to sensitive files & directories
+<FilesMatch "^\.env|\.git|composer\.(json|lock)|package(-lock)?\.json|tsconfig\.json">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect JSON storage directory
+RedirectMatch 403 ^/storage/json/.*$
+RedirectMatch 403 ^/includes/.*$
+
+# Custom Error Pages
+ErrorDocument 404 /404.php
+ErrorDocument 403 /403.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Serve existing files and directories directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route all requests through index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>

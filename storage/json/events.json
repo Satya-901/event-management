@@ -1,0 +1,117 @@
+[
+    {
+        "id": "evt_3e179de3e7f38ca9_1789631341",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "Dandiya Night 2026",
+        "slug": "dandiya-night-2026",
+        "short_description": "An evening of music, dance & celebration in the heart of Bengaluru.",
+        "full_description": "Get ready for Bengaluru's biggest Navratri celebration! Utsavam presents Dandiya Night 2026 hosted by Royal Events. Experience pulsating beats with top traditional Gujarati and Bollywood folk bands, celebrity garba dancers, authentic food stalls, and mesmerizing cultural festivities. Bring your friends and family dressed in your finest traditional attire and dance the night away under the stars!",
+        "category": "Festival & Cultural",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85",
+        "logo": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80"
+        ],
+        "start_date": "2026-10-24",
+        "start_time": "19:00",
+        "end_date": "2026-10-24",
+        "end_time": "23:30",
+        "venue_name": "Palace Grounds, Gayatri Vihar",
+        "address": "Near Mehkri Circle, Bellary Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560006",
+        "google_maps_url": "https://maps.google.com/?q=Palace+Grounds+Bengaluru",
+        "booking_open": true,
+        "max_capacity": 1500,
+        "available_seats": 1460,
+        "confirmation_mode": "instant",
+        "price_label": "Standard Entry (Includes Dandiya Sticks)",
+        "price_amount": 499,
+        "contact_email": "dandiya@royalevents.in",
+        "contact_phone": "+91 98860 12345",
+        "contact_whatsapp": "+91 98860 12345",
+        "social_links": {
+            "instagram": "https://instagram.com/royalevents",
+            "facebook": "https://facebook.com/royalevents",
+            "youtube": "https://youtube.com"
+        },
+        "highlights": [
+            "Live Orchestra featuring 12 renowned folk musicians from Ahmedabad",
+            "Complimentary authentic wooden Dandiya sticks at the entrance",
+            "Multi-cuisine festive food street with 30+ gourmet vegetarian stalls",
+            "Professional DJ set fusion with Dhol tasha beats",
+            "Best Dressed and Best Dancer prizes worth ₹50,000",
+            "Ample free parking space and dedicated air-conditioned family lounges"
+        ],
+        "faqs": [
+            {
+                "question": "What is the dress code for Dandiya Night 2026?",
+                "answer": "Traditional ethnic wear is strongly encouraged! Chaniya Cholis, Kurta Pyjamas, Kediya, and Sarees create the vibrant festive ambiance."
+            },
+            {
+                "question": "Are dandiya sticks provided or should we bring our own?",
+                "answer": "Every registered attendee receives one complimentary pair of polished Dandiya sticks upon check-in at the gate!"
+            },
+            {
+                "question": "Is this a family-friendly event?",
+                "answer": "Yes, absolutely! We have dedicated family areas, seating zones for senior citizens, and tight professional security."
+            },
+            {
+                "question": "How does the digital QR pass work?",
+                "answer": "Once you complete your registration, a unique QR code is generated instantly. Simply show this QR code on your phone or print it for contact-free entry at the gates."
+            }
+        ],
+        "meta_title": "Dandiya Night 2026 | Royal Events Bengaluru",
+        "meta_description": "Join the grandest Dandiya & Garba celebration in Bengaluru on 24 October 2026 at Palace Grounds.",
+        "og_image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "Dandiya Night 2026, Bengaluru Garba, Navratri celebration, Royal Events",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "evt_e1490061cc88cb26_1789631341",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "Diwali Gala & Lights Festival 2026",
+        "slug": "diwali-gala-2026",
+        "short_description": "A dazzling night of fireworks, musical symphony, and festive dining.",
+        "full_description": "Celebrate the Festival of Lights in majestic style with curated cultural showcases, laser light shows, and gourmet dining.",
+        "category": "Gala & Celebrations",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=85",
+        "logo": "",
+        "gallery": [],
+        "start_date": "2026-11-08",
+        "start_time": "18:30",
+        "end_date": "2026-11-08",
+        "end_time": "23:00",
+        "venue_name": "The Leela Palace Ballroom",
+        "address": "Old Airport Road, Kodihalli",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560008",
+        "google_maps_url": "",
+        "booking_open": true,
+        "max_capacity": 800,
+        "available_seats": 785,
+        "confirmation_mode": "instant",
+        "price_label": "Free Registration",
+        "price_amount": 0,
+        "contact_email": "",
+        "contact_phone": "",
+        "contact_whatsapp": "",
+        "social_links": [],
+        "highlights": [],
+        "faqs": [],
+        "meta_title": "",
+        "meta_description": "",
+        "og_image": "",
+        "keywords": "",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
+    }
+]
