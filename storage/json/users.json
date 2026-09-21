@@ -22,5 +22,29 @@
         "status": "active",
         "created_at": "2026-09-17 07:49:01",
         "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "usr_superadmin_alias_2026",
+        "client_id": null,
+        "name": "Super Administrator",
+        "username": "superadmin",
+        "email": "superadmin@utsavam.com",
+        "password": "$2y$10$5GULBIH1vY9nRZaxNNG1ZOoxWmFicDwofvRN5SVqhY62WUcRb/y/.",
+        "role": "super_admin",
+        "status": "active",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "usr_royal_admin_alias_2026",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "Royal Organizer",
+        "username": "royal_admin",
+        "email": "admin@royalevents.in",
+        "password": "$2y$10$5GULBIH1vY9nRZaxNNG1ZOoxWmFicDwofvRN5SVqhY62WUcRb/y/.",
+        "role": "client",
+        "status": "active",
+        "created_at": "2026-09-17 07:49:01",
+        "updated_at": "2026-09-17 07:49:01"
     }
 ]

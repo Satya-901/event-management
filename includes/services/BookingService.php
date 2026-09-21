@@ -154,4 +154,15 @@ class BookingService {
     public static function getBookingAnswers(string $bookingId): array {
         return getDataStore()->getBookingAnswers($bookingId);
     }
+
+    public static function checkIn(string $bookingId, ?string $clientId = null, ?array $actor = null): array {
+        require_once __DIR__ . '/QrService.php';
+        $actorName = $actor['name'] ?? $actor['username'] ?? 'Staff';
+        $result = QrService::checkIn($bookingId, $actorName, $clientId);
+        if (empty($result['success'])) {
+            throw new Exception($result['error'] ?? 'Check-in failed.');
+        }
+        $booking = self::getBooking($bookingId, $clientId);
+        return $booking ?? [];
+    }
 }

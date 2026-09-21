@@ -355,15 +355,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Your Full Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="customer_name" required class="form-control" placeholder="e.g. Rahul Sharma" value="<?= e($_POST['customer_name'] ?? '') ?>">
+                                    <input type="text" name="customer_name" required class="form-control" placeholder="Enter your full name" value="<?= e($_POST['customer_name'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
-                                    <input type="email" name="email" required class="form-control" placeholder="you@example.com" value="<?= e($_POST['email'] ?? '') ?>">
+                                    <input type="email" name="email" required class="form-control" placeholder="Enter your email address" value="<?= e($_POST['email'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Phone / WhatsApp <span class="text-danger">*</span></label>
-                                    <input type="tel" name="phone" required class="form-control" placeholder="+91 9876543210" value="<?= e($_POST['phone'] ?? '') ?>">
+                                    <input type="tel" name="phone" required class="form-control" placeholder="Enter your phone number" value="<?= e($_POST['phone'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Number of Passes <span class="text-danger">*</span></label>

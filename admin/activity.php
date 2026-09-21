@@ -8,9 +8,9 @@ $logs = getDataStore()->getActivityLogs();
 $logs = array_reverse($logs);
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-0 text-white">System Activity & Audit Logs</h4>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">System Activity & Audit Logs</h4>
         <p class="text-muted small mb-0">Immutable tracking of operator logins, client creations, gate check-ins, and pass status changes.</p>
     </div>
 </div>
@@ -19,7 +19,7 @@ $logs = array_reverse($logs);
     <div class="table-responsive">
         <table class="table table-dark-custom align-middle mb-0">
             <thead>
-                <tr style="font-size:11px;" class="text-uppercase text-muted">
+                <tr>
                     <th>Timestamp</th>
                     <th>Actor</th>
                     <th>Action</th>
@@ -38,18 +38,18 @@ $logs = array_reverse($logs);
                                 <?= formatDateTime($log['created_at'] ?? '') ?>
                             </td>
                             <td>
-                                <div class="fw-semibold text-white"><?= e($log['actor_id'] ?? 'System') ?></div>
-                                <span class="badge bg-secondary font-monospace" style="font-size:10px;"><?= e($log['actor_role'] ?? 'system') ?></span>
+                                <div class="fw-semibold text-dark"><?= e($log['actor_id'] ?? 'System') ?></div>
+                                <span class="badge bg-light text-dark border font-monospace" style="font-size:10px;"><?= e($log['actor_role'] ?? 'system') ?></span>
                             </td>
                             <td>
-                                <span class="badge bg-dark border border-secondary text-warning">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
                                     <?= e($log['action'] ?? 'action') ?>
                                 </span>
                             </td>
-                            <td class="small text-muted">
+                            <td class="small text-secondary">
                                 <?= e($log['entity_type'] ?? '') ?> #<?= e(substr($log['entity_id'] ?? '', 0, 12)) ?>
                             </td>
-                            <td class="text-light small">
+                            <td class="text-secondary small">
                                 <?= e($log['description'] ?? '') ?>
                             </td>
                             <td class="font-monospace text-muted small">

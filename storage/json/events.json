@@ -28,7 +28,7 @@
         "google_maps_url": "https://maps.google.com/?q=Palace+Grounds+Bengaluru",
         "booking_open": true,
         "max_capacity": 1500,
-        "available_seats": 1460,
+        "available_seats": 1458,
         "confirmation_mode": "instant",
         "price_label": "Standard Entry (Includes Dandiya Sticks)",
         "price_amount": 499,
@@ -71,7 +71,7 @@
         "og_image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85",
         "keywords": "Dandiya Night 2026, Bengaluru Garba, Navratri celebration, Royal Events",
         "created_at": "2026-09-17 07:49:01",
-        "updated_at": "2026-09-17 07:49:01"
+        "updated_at": "2026-09-17 10:10:02"
     },
     {
         "id": "evt_e1490061cc88cb26_1789631341",
@@ -83,8 +83,10 @@
         "category": "Gala & Celebrations",
         "status": "published",
         "banner": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=85",
-        "logo": "",
-        "gallery": [],
+        "logo": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80"
+        ],
         "start_date": "2026-11-08",
         "start_time": "18:30",
         "end_date": "2026-11-08",
@@ -94,24 +96,256 @@
         "city": "Bengaluru",
         "state": "Karnataka",
         "pincode": "560008",
-        "google_maps_url": "",
+        "google_maps_url": "https://maps.google.com/?q=The+Leela+Palace+Bengaluru",
         "booking_open": true,
         "max_capacity": 800,
         "available_seats": 785,
         "confirmation_mode": "instant",
-        "price_label": "Free Registration",
+        "price_label": "Free Festive Registration",
         "price_amount": 0,
-        "contact_email": "",
-        "contact_phone": "",
-        "contact_whatsapp": "",
-        "social_links": [],
-        "highlights": [],
-        "faqs": [],
-        "meta_title": "",
-        "meta_description": "",
-        "og_image": "",
-        "keywords": "",
+        "contact_email": "diwali@royalevents.in",
+        "contact_phone": "+91 98860 12345",
+        "contact_whatsapp": "+91 98860 12345",
+        "social_links": {
+            "instagram": "https://instagram.com/royalevents"
+        },
+        "highlights": [
+            "Synchronized laser light show and eco-friendly sparkles",
+            "Classical sitar and tabla fusion concert",
+            "Gourmet royal Indian buffet and sweets tasting counter"
+        ],
+        "faqs": [
+            {
+                "question": "Is entry free of charge?",
+                "answer": "Yes! Entry is complimentary with prior digital pass registration."
+            }
+        ],
+        "meta_title": "Diwali Gala & Lights Festival 2026 | Royal Events",
+        "meta_description": "Celebrate Diwali 2026 at The Leela Palace Ballroom with spectacular music and dining.",
+        "og_image": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "Diwali Gala 2026, Bengaluru Diwali, Festival of Lights",
         "created_at": "2026-09-17 07:49:01",
         "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "evt_sunburn_bengaluru_2026",
+        "client_id": "client_sunburn_live_2026",
+        "name": "Sunburn Arena Bengaluru 2026 - EDM & Live Concert",
+        "slug": "sunburn-bengaluru-2026",
+        "short_description": "India's premier electronic dance music festival featuring international superstar DJs.",
+        "full_description": "Sunburn Arena returns to Bengaluru with a colossal stage setup, world-class laser & visual production, and electrifying performances from top global EDM and bass artists. Experience an unforgettable sonic journey with thousands of music lovers!",
+        "category": "Music & Concerts",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=85",
+        "logo": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80"
+        ],
+        "start_date": "2026-11-21",
+        "start_time": "16:00",
+        "end_date": "2026-11-21",
+        "end_time": "22:30",
+        "venue_name": "Manpho Convention Grounds",
+        "address": "Near Manyata Tech Park, Hebbal",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560045",
+        "google_maps_url": "https://maps.google.com/?q=Manpho+Convention+Centre",
+        "booking_open": true,
+        "max_capacity": 4000,
+        "available_seats": 3820,
+        "confirmation_mode": "instant",
+        "price_label": "Early Bird General Access",
+        "price_amount": 1499,
+        "contact_email": "tickets@sunburnlive.in",
+        "contact_phone": "+91 98200 54321",
+        "contact_whatsapp": "+91 98200 54321",
+        "social_links": {
+            "instagram": "https://instagram.com/sunburnfestival"
+        },
+        "highlights": [
+            "International Headliner DJ Set + 6 supporting indie EDM acts",
+            "State-of-the-art 3D visual LED stage and CO2 cannons",
+            "Dedicated beverage and festival merchandise zones",
+            "Express digital pass turnstile scanning for zero queues"
+        ],
+        "faqs": [
+            {
+                "question": "Is there an age restriction for Sunburn?",
+                "answer": "Attendees must be 18 years or older. Valid government photo ID is required with your QR pass."
+            }
+        ],
+        "meta_title": "Sunburn Arena Bengaluru 2026 | Live Concert",
+        "meta_description": "Catch the biggest EDM party in Bengaluru at Manpho Convention Grounds with international headliners.",
+        "og_image": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "Sunburn Bengaluru, EDM concert, Music festival 2026",
+        "created_at": "2026-09-18 10:00:00",
+        "updated_at": "2026-09-18 10:00:00"
+    },
+    {
+        "id": "evt_techsparks_bengaluru_2026",
+        "client_id": "client_bengaluru_tech_2026",
+        "name": "TechSparks 2026 - AI & Startup Innovation Summit",
+        "slug": "techsparks-2026",
+        "short_description": "India's most influential technology conference bringing founders, VCs, and AI engineers together.",
+        "full_description": "Join 2,500+ founders, tech leaders, venture capitalists, and developers for keynote talks on Generative AI, frontier tech, masterclasses, and an exclusive high-energy startup pitch arena.",
+        "category": "Tech & Conferences",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=85",
+        "logo": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80"
+        ],
+        "start_date": "2026-10-30",
+        "start_time": "09:00",
+        "end_date": "2026-10-30",
+        "end_time": "18:00",
+        "venue_name": "Taj Yeshwantpur Convention Hall",
+        "address": "Tumkur Road, Yeshwantpur",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560022",
+        "google_maps_url": "https://maps.google.com/?q=Taj+Yeshwantpur+Bengaluru",
+        "booking_open": true,
+        "max_capacity": 2500,
+        "available_seats": 2410,
+        "confirmation_mode": "instant",
+        "price_label": "Founder & Delegate Pass",
+        "price_amount": 999,
+        "contact_email": "summit@nextgentech.org",
+        "contact_phone": "+91 99000 88776",
+        "contact_whatsapp": "+91 99000 88776",
+        "social_links": {
+            "instagram": "https://instagram.com/techsummit"
+        },
+        "highlights": [
+            "30+ Keynotes from Unicorn founders and AI research leads",
+            "Speed networking sessions with 50+ active angel & seed VCs",
+            "Live product launch demo arena & expo booths",
+            "Full-day gourmet lunch and networking cocktail pass"
+        ],
+        "faqs": [
+            {
+                "question": "Does the pass include networking access?",
+                "answer": "Yes, every delegate pass grants access to keynotes, workshops, and the VC networking lounge."
+            }
+        ],
+        "meta_title": "TechSparks 2026 | AI & Startup Summit Bengaluru",
+        "meta_description": "Connect with founders, investors, and AI creators at TechSparks 2026.",
+        "og_image": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "TechSparks 2026, Tech conference Bengaluru, Startup summit",
+        "created_at": "2026-09-19 12:00:00",
+        "updated_at": "2026-09-19 12:00:00"
+    },
+    {
+        "id": "evt_food_carnival_2026",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "The Great Indian Food & Music Carnival",
+        "slug": "street-food-carnival-2026",
+        "short_description": "A weekend celebration of 60+ iconic street food stalls, live acoustic music, and flea market.",
+        "full_description": "Taste culinary delicacies from all across India! From Delhi chaat and Mumbai vada pav to Kolkata kathi rolls and Chettinad specialties, accompanied by soul-stirring live acoustic sets, games, and artisanal flea stalls.",
+        "category": "Food & Lifestyle",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=85",
+        "logo": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80"
+        ],
+        "start_date": "2026-11-14",
+        "start_time": "12:00",
+        "end_date": "2026-11-15",
+        "end_time": "22:00",
+        "venue_name": "Jaymahal Palace Gardens",
+        "address": "Near Cantt Railway Station Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560046",
+        "google_maps_url": "https://maps.google.com/?q=Jayamahal+Palace+Bengaluru",
+        "booking_open": true,
+        "max_capacity": 3000,
+        "available_seats": 2915,
+        "confirmation_mode": "instant",
+        "price_label": "Carnival Weekend Entry Pass",
+        "price_amount": 149,
+        "contact_email": "foodfest@royalevents.in",
+        "contact_phone": "+91 98860 12345",
+        "contact_whatsapp": "+91 98860 12345",
+        "social_links": {
+            "instagram": "https://instagram.com/royalevents"
+        },
+        "highlights": [
+            "60+ verified curated street food stalls from 14 Indian states",
+            "Live acoustic indie bands & open mic poetry performances",
+            "Artisanal flea market with handmade crafts & home decor",
+            "Kids game zone and pet-friendly open lawns"
+        ],
+        "faqs": [
+            {
+                "question": "Is parking available at the venue?",
+                "answer": "Yes, ample valet and self-parking space is available inside Jaymahal Palace grounds."
+            }
+        ],
+        "meta_title": "The Great Indian Food & Music Carnival 2026",
+        "meta_description": "Taste India's best street food and enjoy live indie music at Jayamahal Palace Bengaluru.",
+        "og_image": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "Food Carnival Bengaluru, Street Food Festival, Indie Music",
+        "created_at": "2026-09-19 14:00:00",
+        "updated_at": "2026-09-19 14:00:00"
+    },
+    {
+        "id": "evt_laughter_therapy_2026",
+        "client_id": "client_364f8a843f8589e3_1789631341",
+        "name": "The Laughter Therapy - Standup Comedy Night",
+        "slug": "laughter-therapy-comedy-2026",
+        "short_description": "A hilarious evening of unfiltered standup comedy with top Indian comic artists.",
+        "full_description": "Prepare for non-stop laughter as four of India's favorite standup comedians hit the stage with brand-new sets, relatable observations on modern life, dating, work culture, and hilarious crowd work.",
+        "category": "Comedy & Entertainment",
+        "status": "published",
+        "banner": "https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=85",
+        "logo": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=200&q=80",
+        "gallery": [
+            "https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=800&q=80"
+        ],
+        "start_date": "2026-10-18",
+        "start_time": "20:00",
+        "end_date": "2026-10-18",
+        "end_time": "22:00",
+        "venue_name": "Chowdiah Memorial Hall",
+        "address": "16th Cross, Malleshwaram",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pincode": "560003",
+        "google_maps_url": "https://maps.google.com/?q=Chowdiah+Memorial+Hall",
+        "booking_open": true,
+        "max_capacity": 600,
+        "available_seats": 540,
+        "confirmation_mode": "instant",
+        "price_label": "Auditorium Seating Pass",
+        "price_amount": 399,
+        "contact_email": "comedy@royalevents.in",
+        "contact_phone": "+91 98860 12345",
+        "contact_whatsapp": "+91 98860 12345",
+        "social_links": {
+            "instagram": "https://instagram.com/royalevents"
+        },
+        "highlights": [
+            "Featuring 4 celebrity touring standup comics",
+            "Prime air-conditioned auditorium acoustic seating",
+            "Live unscripted crowd interaction & comedy games",
+            "Snack boxes & refreshments available at intermission"
+        ],
+        "faqs": [
+            {
+                "question": "What is the age limit for the comedy show?",
+                "answer": "This show is recommended for audiences aged 16 and above."
+            }
+        ],
+        "meta_title": "The Laughter Therapy - Standup Comedy Night 2026",
+        "meta_description": "Catch top standup comedians live at Chowdiah Memorial Hall Bengaluru.",
+        "og_image": "https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=85",
+        "keywords": "Standup comedy Bengaluru, Laughter Therapy, Live comedy show",
+        "created_at": "2026-09-20 09:00:00",
+        "updated_at": "2026-09-20 09:00:00"
     }
 ]

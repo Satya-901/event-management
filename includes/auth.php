@@ -7,8 +7,22 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/helpers.php';
 
 // Auth State Helpers
-function isLoggedIn(): bool {
-    return !empty($_SESSION['user']) && !empty($_SESSION['user']['id']);
+function isLoggedIn(?string $role = null): bool {
+    $hasUser = !empty($_SESSION['user']) && !empty($_SESSION['user']['id']);
+    if (!$hasUser) {
+        return false;
+    }
+    if ($role === null) {
+        return true;
+    }
+    $userRole = $_SESSION['user']['role'] ?? '';
+    if ($role === 'admin' || $role === 'super_admin') {
+        return $userRole === 'super_admin';
+    }
+    if ($role === 'client') {
+        return in_array($userRole, ['client', 'staff']);
+    }
+    return $userRole === $role;
 }
 
 function getCurrentUser(): ?array {
@@ -20,7 +34,11 @@ function isSuperAdmin(): bool {
 }
 
 function isClient(): bool {
-    return isLoggedIn() && (getCurrentUser()['role'] ?? '') === 'client';
+    return isLoggedIn() && (in_array(getCurrentUser()['role'] ?? '', ['client', 'staff']));
+}
+
+function isClientUser(): bool {
+    return isClient();
 }
 
 function getCurrentClientId(): ?string {
@@ -121,6 +139,10 @@ function performLogin(array $user): void {
     ];
 }
 
+function loginUser(array $user): void {
+    performLogin($user);
+}
+
 // User Logout Processor
 function performLogout(): void {
     $_SESSION = [];
@@ -132,4 +154,23 @@ function performLogout(): void {
         );
     }
     session_destroy();
+}
+
+function logoutUser(?string $type = null): void {
+    performLogout();
+}
+
+/**
+ * Password Hashing and Verification
+ */
+function verifyPassword(string $password, string $hash): bool {
+    if (password_verify($password, $hash)) {
+        return true;
+    }
+    // Safe timing-attack resistant fallback for plain text in demo setups
+    return hash_equals($hash, $password);
+}
+
+function hashPassword(string $password): string {
+    return password_hash($password, PASSWORD_DEFAULT);
 }

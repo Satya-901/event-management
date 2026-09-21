@@ -58,38 +58,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-0 text-dark">Edit: <?= e($event['name']) ?></h4>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Edit: <?= e($event['name']) ?></h4>
         <p class="text-muted small mb-0">Update event details, timing, venue, and public status.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="/<?= e($currentClient['slug']) ?>/<?= e($event['slug']) ?>/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
-            <i data-lucide="external-link" style="width:14px;height:14px;"></i> View Public Page
+    <div class="d-flex gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
+        <a href="/<?= e($currentClient['slug']) ?>/<?= e($event['slug']) ?>/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i data-lucide="external-link" style="width:14px;height:14px;"></i> Public Page
         </a>
-        <a href="/client/events/builder?id=<?= e($event['id']) ?>" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+        <a href="/client/events/builder?id=<?= e($event['id']) ?>" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i data-lucide="sliders" style="width:14px;height:14px;"></i> Form Builder
         </a>
     </div>
 </div>
 
 <?php if ($error): ?>
-    <div class="alert alert-danger py-2 small mb-3"><?= e($error) ?></div>
+    <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;"></i>
+        <span><?= e($error) ?></span>
+    </div>
 <?php endif; ?>
 <?php if ($success): ?>
-    <div class="alert alert-success py-2 small mb-3"><?= e($success) ?></div>
+    <div class="alert alert-success py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+        <span><?= e($success) ?></span>
+    </div>
 <?php endif; ?>
 
-<form method="POST" action="/client/events/edit?id=<?= e($event['id']) ?>" class="card p-4 bg-white shadow-sm">
+<form method="POST" action="/client/events/edit?id=<?= e($event['id']) ?>" class="card p-3 p-md-4 shadow-xs">
     <?= csrfInput() ?>
 
     <div class="row g-3">
         <div class="col-md-8">
-            <label class="form-label small fw-semibold">Event Name <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">Event Name <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" value="<?= e($event['name']) ?>" required>
         </div>
         <div class="col-md-4">
-            <label class="form-label small fw-semibold">Status</label>
+            <label class="form-label small fw-semibold text-secondary">Status</label>
             <select name="status" class="form-select">
                 <option value="published" <?= ($event['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published (Visible)</option>
                 <option value="draft" <?= ($event['status'] ?? '') === 'draft' ? 'selected' : '' ?>>Draft (Hidden)</option>
@@ -98,21 +104,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="col-12">
-            <label class="form-label small fw-semibold">Short Summary</label>
+            <label class="form-label small fw-semibold text-secondary">Short Summary</label>
             <input type="text" name="short_description" class="form-control" value="<?= e($event['short_description']) ?>">
         </div>
 
         <div class="col-12">
-            <label class="form-label small fw-semibold">Full Description</label>
+            <label class="form-label small fw-semibold text-secondary">Full Description</label>
             <textarea name="full_description" class="form-control" rows="4"><?= e($event['full_description']) ?></textarea>
         </div>
 
         <div class="col-md-8">
-            <label class="form-label small fw-semibold">Banner Image URL</label>
+            <label class="form-label small fw-semibold text-secondary">Banner Image URL</label>
             <input type="url" name="banner" class="form-control" value="<?= e($event['banner']) ?>">
         </div>
         <div class="col-md-4">
-            <label class="form-label small fw-semibold">Ticket Price (₹)</label>
+            <label class="form-label small fw-semibold text-secondary">Ticket Price (₹)</label>
             <input type="number" name="price_amount" class="form-control" value="<?= e($event['price_amount'] ?? 0) ?>" step="0.01">
         </div>
 

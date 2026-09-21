@@ -47,36 +47,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-0 text-dark">Dynamic Form Builder</h4>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Dynamic Form Builder</h4>
         <p class="text-muted small mb-0">Customize registration questions and pass requirements for <strong><?= e($event['name']) ?></strong>.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="/<?= e($currentClient['slug']) ?>/<?= e($event['slug']) ?>/#bookingSection" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+    <div class="d-flex gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
+        <a href="/<?= e($currentClient['slug']) ?>/<?= e($event['slug']) ?>/#bookingSection" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i data-lucide="eye" style="width:14px;height:14px;"></i> Test Live Form
         </a>
-        <a href="/client/events" class="btn btn-light border btn-sm">Return to Events</a>
+        <a href="/client/events" class="btn btn-light border btn-sm shadow-xs">Return to Events</a>
     </div>
 </div>
 
 <?php if ($error): ?>
-    <div class="alert alert-danger py-2 small mb-3"><?= e($error) ?></div>
+    <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;"></i>
+        <span><?= e($error) ?></span>
+    </div>
 <?php endif; ?>
 <?php if ($success): ?>
-    <div class="alert alert-success py-2 small mb-3"><?= e($success) ?></div>
+    <div class="alert alert-success py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+        <span><?= e($success) ?></span>
+    </div>
 <?php endif; ?>
 
-<div class="row g-4">
+<div class="row g-3 g-md-4">
     <!-- Form Fields Editor -->
     <div class="col-lg-7">
         <form method="POST" action="/client/events/builder?id=<?= e($eventId) ?>">
             <?= csrfInput() ?>
 
-            <div class="card p-3 bg-white mb-3 shadow-sm">
+            <div class="card p-3 p-md-4 mb-3 shadow-xs">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Custom Questions & Form Fields</h6>
-                    <button type="button" class="btn btn-warning btn-sm fw-semibold text-dark d-inline-flex align-items-center gap-1" id="addFieldBtn">
+                    <h6 class="fw-bold mb-0" style="color:#0f172a;">Custom Questions & Form Fields</h6>
+                    <button type="button" class="btn btn-warning btn-sm fw-semibold text-white d-inline-flex align-items-center gap-1.5 shadow-xs" id="addFieldBtn" style="background-color:#ea580c !important; border-color:#ea580c !important;">
                         <i data-lucide="plus" style="width:14px;height:14px;"></i> Add New Question
                     </button>
                 </div>
@@ -92,11 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card p-3 bg-light border mb-2 field-row">
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-5">
-                                    <label class="form-label text-xs fw-semibold mb-1" style="font-size:11px;">Field Label / Question</label>
+                                    <label class="form-label text-xs fw-semibold mb-1 text-secondary" style="font-size:11px;">Field Label / Question</label>
                                     <input type="text" name="field_label[]" class="form-control form-control-sm field-label-input" value="<?= e($f['field_label']) ?>" required>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label text-xs fw-semibold mb-1" style="font-size:11px;">Input Type</label>
+                                    <label class="form-label text-xs fw-semibold mb-1 text-secondary" style="font-size:11px;">Input Type</label>
                                     <select name="field_type[]" class="form-select form-select-sm">
                                         <option value="text" <?= $f['field_type'] === 'text' ? 'selected' : '' ?>>Text</option>
                                         <option value="email" <?= $f['field_type'] === 'email' ? 'selected' : '' ?>>Email</option>
@@ -107,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label text-xs fw-semibold mb-1" style="font-size:11px;">Placeholder</label>
+                                    <label class="form-label text-xs fw-semibold mb-1 text-secondary" style="font-size:11px;">Placeholder</label>
                                     <input type="text" name="placeholder[]" class="form-control form-control-sm" value="<?= e($f['placeholder'] ?? '') ?>" placeholder="e.g. Type here...">
                                 </div>
                                 <div class="col-md-1 text-end pt-3">
@@ -127,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="mt-3 pt-3 border-top text-end">
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold" style="background:#c2410c; border-color:#c2410c;">
+                    <button type="submit" class="btn btn-warning px-4 py-2 fw-semibold text-white shadow-xs" style="background-color:#ea580c !important; border-color:#ea580c !important;">
                         Save Form Configuration
                     </button>
                 </div>
@@ -137,9 +143,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Live Preview -->
     <div class="col-lg-5">
-        <div class="card p-4 bg-white shadow-sm sticky-top" style="top: 20px;">
-            <div class="badge bg-light text-dark border align-self-start mb-2">Attendee View Preview</div>
-            <h5 class="fw-bold mb-1">Pass Reservation Form</h5>
+        <div class="card p-4 shadow-xs sticky-top" style="top: 20px;">
+            <div class="badge bg-light text-secondary border align-self-start mb-2 font-monospace" style="font-size:11px;">Attendee View Preview</div>
+            <h5 class="fw-bold mb-1" style="color:#0f172a;">Pass Reservation Form</h5>
             <p class="text-muted small mb-3">Live preview of how questions appear to customers.</p>
 
             <div class="border rounded-3 p-3 bg-light">

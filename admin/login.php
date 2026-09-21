@@ -51,78 +51,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #f8fafc;
+            color: #0f172a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+            background-size: 24px 24px;
         }
         .login-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 16px;
-            padding: 36px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 32px 24px;
             width: 100%;
             max-width: 440px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+        }
+        @media (min-width: 576px) {
+            .login-card {
+                padding: 40px 36px;
+            }
         }
         .form-control {
-            background-color: #0f172a;
-            border-color: #334155;
-            color: #f8fafc;
+            background-color: #ffffff;
+            border-color: #cbd5e1;
+            color: #0f172a;
+            font-size: 14.5px;
+            border-radius: 9px;
         }
         .form-control:focus {
-            background-color: #0f172a;
-            border-color: #f59e0b;
-            color: #f8fafc;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+            background-color: #ffffff;
+            border-color: #2563eb;
+            color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .input-group-text {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: #64748b;
+            border-radius: 9px;
         }
         .btn-admin {
-            background: #f59e0b;
-            color: #0f172a;
+            background: #2563eb;
+            color: #ffffff;
             border: none;
             font-weight: 600;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 11px;
+            border-radius: 9px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
         }
         .btn-admin:hover {
-            background: #d97706;
-            color: #0f172a;
+            background: #1d4ed8;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-warning bg-opacity-10 text-warning mb-2">
-                <i data-lucide="shield" style="width:32px;height:32px;"></i>
+            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-3 bg-primary bg-opacity-10 text-primary mb-2 shadow-xs">
+                <i data-lucide="shield" style="width:30px;height:30px;"></i>
             </div>
-            <h4 class="fw-bold mb-1"><?= e(APP_NAME) ?> Platform</h4>
-            <span class="badge bg-danger text-uppercase px-2 py-1" style="font-size:10px; letter-spacing:1px;">Super Admin Control</span>
+            <h4 class="fw-bold mb-1" style="color:#0f172a;"><?= e(APP_NAME) ?> Platform</h4>
+            <span class="badge bg-primary bg-opacity-10 text-primary text-uppercase px-2.5 py-1 fw-bold" style="font-size:10.5px; letter-spacing:0.5px;">Super Admin Control</span>
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
-                <?= e($error) ?>
+            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+                <i data-lucide="alert-circle" style="width:16px;height:16px;"></i>
+                <span><?= e($error) ?></span>
             </div>
         <?php endif; ?>
 
         <form method="POST" action="/admin/login">
             <?= csrfInput() ?>
             <div class="mb-3">
-                <label class="form-label small text-muted">Username or Email</label>
+                <label class="form-label small fw-semibold text-secondary">Username or Email</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-dark border-secondary text-muted"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
+                    <span class="input-group-text"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
                     <input type="text" name="username" class="form-control" placeholder="admin" value="admin" required autofocus>
                 </div>
             </div>
 
             <div class="mb-4">
-                <label class="form-label small text-muted">Master Password</label>
+                <label class="form-label small fw-semibold text-secondary">Master Password</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-dark border-secondary text-muted"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
+                    <span class="input-group-text"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
                     <input type="password" name="password" class="form-control" placeholder="••••••••" value="admin123" required>
                 </div>
             </div>
@@ -131,14 +151,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i data-lucide="log-in" style="width:16px;height:16px;"></i> Authenticate as Super Admin
             </button>
 
-            <div class="bg-black bg-opacity-30 p-2 rounded text-center small text-muted">
-                Demo Credentials: <span class="text-warning">admin</span> / <span class="text-warning">admin123</span>
+            <div class="bg-light p-2.5 rounded-3 text-center small text-muted border">
+                Demo Credentials: <span class="fw-bold text-dark font-monospace">admin</span> / <span class="fw-bold text-dark font-monospace">admin123</span>
             </div>
         </form>
 
         <div class="text-center mt-4">
-            <a href="/client/login" class="text-muted small text-decoration-none hover-underline">
-                Switch to Client Organizer Portal &rarr;
+            <a href="/client/login" class="text-muted small text-decoration-none hover-underline d-inline-flex align-items-center gap-1">
+                <span>Switch to Client Organizer Portal</span>
+                <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
             </a>
         </div>
     </div>

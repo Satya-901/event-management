@@ -98,7 +98,7 @@ try {
         'booking_id' => $booking['id'],
         'booking_number' => $booking['booking_number'],
         'qr_token' => $booking['qr_token'],
-        'verify_url' => APP_URL . '/verify/' . $booking['qr_token'],
+        'verify_url' => appUrl('/verify/' . $booking['qr_token']),
         'message' => 'Your pass reservation is confirmed!'
     ]);
 } catch (Exception $e) {

@@ -84,11 +84,33 @@ define('MAIL_ENCRYPTION', env('MAIL_ENCRYPTION', 'tls'));
 define('MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'support@utsavam.com'));
 define('MAIL_FROM_NAME', env('MAIL_FROM_NAME', 'Utsavam'));
 
-// Setup session security
+// Setup session security for cross-origin iframe and standalone execution
 if (session_status() === PHP_SESSION_NONE) {
+    $sessionName = SESSION_NAME;
+
+    // Check for fallback session ID from POST or GET when cookies are restricted in iframes
+    if (empty($_COOKIE[$sessionName])) {
+        $candidateId = $_POST['_session_id'] ?? $_GET['_session_id'] ?? null;
+        if (is_string($candidateId) && preg_match('/^[a-zA-Z0-9,-]{16,64}$/', $candidateId)) {
+            session_id($candidateId);
+        }
+    }
+
     ini_set('session.cookie_httponly', '1');
-    ini_set('session.use_only_cookies', '1');
-    session_name(SESSION_NAME);
+    ini_set('session.use_only_cookies', '0');
+    ini_set('session.cookie_secure', '1');
+    ini_set('session.cookie_samesite', 'None');
+
+    session_set_cookie_params([
+        'lifetime' => 86400 * 7,
+        'path' => '/',
+        'domain' => '',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None'
+    ]);
+
+    session_name($sessionName);
     session_start();
 }
 

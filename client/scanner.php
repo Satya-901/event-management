@@ -9,13 +9,13 @@ $events = EventService::getEvents($clientId);
 $selectedEventId = $_GET['event_id'] ?? '';
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-0 text-dark">Gate Pass Scanner & Turnstile Check-In</h4>
-        <p class="text-muted small mb-0">Scan customer QR codes using camera or enter pass tokens manually.</p>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Gate Pass Scanner & Turnstile Check-In</h4>
+        <p class="text-muted small mb-0">Point your smartphone camera at attendee digital passes or enter tokens manually.</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <label class="small text-muted mb-0 me-1">Target Event:</label>
+    <div class="d-flex align-items-center gap-2 w-100 w-sm-auto">
+        <label class="small text-muted mb-0 text-nowrap fw-medium">Target Event:</label>
         <select id="eventFilterSelect" class="form-select form-select-sm" style="max-width: 260px;">
             <option value="">All Active Events (Any Pass)</option>
             <?php foreach ($events as $ev): ?>

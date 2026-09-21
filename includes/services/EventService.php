@@ -52,7 +52,7 @@ class EventService {
                 'field_key' => 'mobile_number',
                 'field_label' => 'Phone / WhatsApp Number',
                 'field_type' => 'phone',
-                'placeholder' => '+91 9876543210',
+                'placeholder' => 'Enter mobile phone number',
                 'required' => 1
             ],
             [
@@ -66,7 +66,7 @@ class EventService {
                 'field_key' => 'city_locality',
                 'field_label' => 'City / Locality',
                 'field_type' => 'text',
-                'placeholder' => 'e.g. Indiranagar, Bengaluru',
+                'placeholder' => 'Enter city or neighborhood',
                 'required' => 0
             ],
             [

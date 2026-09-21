@@ -17,6 +17,13 @@ class QrService {
     }
 
     /**
+     * Alias for verifyQr used by scanning endpoints
+     */
+    public static function verifyQr(string $token, ?string $clientId = null, ?string $targetEventId = null, $currentUser = null): array {
+        return self::verifyToken($token, $targetEventId, $clientId);
+    }
+
+    /**
      * Verify QR token for scanning
      * @param string $token
      * @param string|null $expectedEventId Optional: constrain check to a specific event

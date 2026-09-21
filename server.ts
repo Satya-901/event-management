@@ -1,5 +1,5 @@
 import express from 'express';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, execSync, ChildProcess } from 'child_process';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const app = express();
@@ -10,8 +10,30 @@ const PHP_PORT = 8085;
 let phpProcess: ChildProcess | null = null;
 let isShuttingDown = false;
 
+function ensurePhpInstalled(): boolean {
+  try {
+    execSync('php -v', { stdio: 'ignore' });
+    return true;
+  } catch {
+    console.log('[Setup] PHP runtime not found. Auto-installing PHP CLI and modules...');
+    try {
+      execSync('DEBIAN_FRONTEND=noninteractive apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" php-cli php-sqlite3 php-curl php-mbstring php-xml', { stdio: 'inherit' });
+      return true;
+    } catch (installErr) {
+      console.error('[Setup] Failed to auto-install PHP:', installErr);
+      return false;
+    }
+  }
+}
+
 function startPhpServer() {
   if (isShuttingDown) return;
+
+  if (!ensurePhpInstalled()) {
+    console.error('[PHP] PHP is not available. Retrying in 5000ms...');
+    setTimeout(startPhpServer, 5000);
+    return;
+  }
 
   phpProcess = spawn('php', ['-S', `127.0.0.1:${PHP_PORT}`, 'index.php'], {
     cwd: process.cwd(),
@@ -24,6 +46,10 @@ function startPhpServer() {
 
   phpProcess.stderr?.on('data', (data) => {
     process.stderr.write(`[PHP] ${data}`);
+  });
+
+  phpProcess.on('error', (err) => {
+    console.error('[PHP] Process error:', err);
   });
 
   phpProcess.on('close', (code) => {
@@ -47,7 +73,32 @@ app.use('/', createProxyMiddleware({
   target: `http://127.0.0.1:${PHP_PORT}`,
   changeOrigin: true,
   ws: true,
+  xfwd: true,
   on: {
+    proxyRes: (proxyRes) => {
+      const cookies = proxyRes.headers['set-cookie'];
+      if (cookies) {
+        const list = Array.isArray(cookies) ? cookies : [cookies];
+        proxyRes.headers['set-cookie'] = list.map((c) => {
+          let str = c;
+          if (!/samesite=/i.test(str)) {
+            str += '; SameSite=None';
+          } else {
+            str = str.replace(/samesite=[^;]+/i, 'SameSite=None');
+          }
+          if (!/;\s*secure/i.test(str)) {
+            str += '; Secure';
+          }
+          if (!/;\s*partitioned/i.test(str)) {
+            str += '; Partitioned';
+          }
+          if (!/path=/i.test(str)) {
+            str += '; Path=/';
+          }
+          return str;
+        });
+      }
+    },
     error: (err, req, res) => {
       console.error('[Proxy Error]:', err.message);
       const expressRes = res as express.Response;

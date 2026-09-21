@@ -11,6 +11,16 @@ function e(?string $string): string {
     return htmlspecialchars((string)($string ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
+// String Trimming Polyfill
+if (!function_exists('mb_strimwidth')) {
+    function mb_strimwidth(string $string, int $start, int $width, string $trimmarker = '', ?string $encoding = null): string {
+        if (strlen($string) <= $width) {
+            return $string;
+        }
+        return substr($string, $start, max(0, $width - strlen($trimmarker))) . $trimmarker;
+    }
+}
+
 // Redirect Helper
 function redirect(string $url): void {
     header("Location: " . $url);
@@ -45,7 +55,9 @@ function getFlash(): ?array {
 // URL slug generator
 function slugify(string $text): string {
     $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-    $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+    if (function_exists('iconv')) {
+        $text = @iconv('utf-8', 'us-ascii//TRANSLIT', $text) ?: $text;
+    }
     $text = preg_replace('~[^-\w]+~', '', $text);
     $text = trim($text, '-');
     $text = preg_replace('~-+~', '-', $text);
@@ -142,6 +154,10 @@ function getStatusBadge(string $status): string {
 
     $cfg = $map[$statusLower] ?? ['bg' => 'secondary', 'text' => ucfirst($status), 'icon' => 'circle'];
     return '<span class="badge bg-' . $cfg['bg'] . ' d-inline-flex align-items-center gap-1"><i data-lucide="' . $cfg['icon'] . '" style="width:13px;height:13px;"></i> ' . e($cfg['text']) . '</span>';
+}
+
+function statusBadge(string $status): string {
+    return getStatusBadge($status);
 }
 
 // Safe File Upload Helper

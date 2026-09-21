@@ -43,31 +43,31 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
     <div>
-        <h4 class="fw-bold mb-0 text-dark">Live Booking Sheet</h4>
-        <p class="text-muted small mb-0">High-density Excel-like ledger with live sorting, filtering, and single-click check-ins.</p>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Live Booking Sheet</h4>
+        <p class="text-muted small mb-0">High-density spreadsheet ledger with live sorting, filtering, and single-click check-ins.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'csv'])) ?>" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1">
+    <div class="d-flex gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
+        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'csv'])) ?>" class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i data-lucide="download" style="width:14px;height:14px;"></i> Export CSV
         </a>
-        <button onclick="window.print()" class="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1">
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i data-lucide="printer" style="width:14px;height:14px;"></i> Print Sheet
         </button>
     </div>
 </div>
 
 <!-- Filters Bar -->
-<div class="card p-3 bg-white mb-3">
+<div class="card p-3 mb-3 shadow-xs">
     <form method="GET" action="/client/sheets" class="row g-2 align-items-center">
-        <div class="col-md-3">
+        <div class="col-12 col-md-3">
             <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
+                <span class="input-group-text bg-light text-muted"><i data-lucide="search" style="width:14px;height:14px;"></i></span>
                 <input type="text" name="search" class="form-control" placeholder="Search name, phone, booking #..." value="<?= e($searchQuery) ?>">
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">All Events</option>
                 <?php foreach ($events as $ev): ?>
@@ -77,7 +77,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">All Statuses</option>
                 <option value="confirmed" <?= $selectedStatus === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
@@ -86,12 +86,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                 <option value="cancelled" <?= $selectedStatus === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
             </select>
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-dark btn-sm w-100">Filter</button>
+        <div class="col-6 col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100 fw-medium shadow-xs" style="background-color:#ea580c !important; border-color:#ea580c !important;">Filter</button>
         </div>
-        <div class="col-md-2 text-end">
+        <div class="col-6 col-md-2 text-end">
             <span class="badge bg-light text-dark border px-2 py-1">
-                <?= count($bookings) ?> Records Found
+                <?= count($bookings) ?> Records
             </span>
         </div>
     </form>

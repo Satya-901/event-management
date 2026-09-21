@@ -52,6 +52,7 @@ $routes = [
     '/admin' => '/admin/dashboard.php',
     '/admin/dashboard' => '/admin/dashboard.php',
     '/admin/login' => '/admin/login.php',
+    '/admin/leads' => '/admin/leads.php',
     '/admin/clients' => '/admin/clients.php',
     '/admin/clients/create' => '/admin/client_create.php',
     '/admin/events' => '/admin/events.php',
@@ -75,6 +76,7 @@ $routes = [
     '/client/profile' => '/client/profile.php',
 
     // APIs
+    '/api/submit-lead' => '/api/submit-lead.php',
     '/api/book-event' => '/api/book-event.php',
     '/api/scan-qr' => '/api/scan-qr.php',
     '/api/check-in' => '/api/check-in.php',

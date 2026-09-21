@@ -28,6 +28,15 @@ function seedUtsavamDemoData(): void {
         'status' => 'active'
     ]);
 
+    $store->createUser([
+        'name' => 'Super Administrator',
+        'username' => 'superadmin',
+        'email' => 'superadmin@utsavam.com',
+        'password' => 'password123',
+        'role' => 'super_admin',
+        'status' => 'active'
+    ]);
+
     // 2. Seed Client "Royal Events"
     $royalClient = $store->createClient([
         'name' => 'Royal Events',
@@ -47,6 +56,16 @@ function seedUtsavamDemoData(): void {
         'name' => 'Rajesh Sharma',
         'username' => 'organizer',
         'email' => 'organizer@royalevents.in',
+        'password' => 'password123',
+        'role' => 'client',
+        'status' => 'active'
+    ]);
+
+    $store->createUser([
+        'client_id' => $royalClient['id'],
+        'name' => 'Royal Organizer',
+        'username' => 'royal_admin',
+        'email' => 'admin@royalevents.in',
         'password' => 'password123',
         'role' => 'client',
         'status' => 'active'

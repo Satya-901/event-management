@@ -57,67 +57,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
-            background-color: #fffaf5;
-            color: #292524;
+            background-color: #f8fafc;
+            color: #0f172a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+            background-size: 24px 24px;
         }
         .login-card {
             background: #ffffff;
-            border: 1px solid #fed7aa;
-            border-radius: 16px;
-            padding: 36px;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 32px 24px;
             width: 100%;
             max-width: 440px;
-            box-shadow: 0 20px 40px -10px rgba(194, 65, 12, 0.1);
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+        }
+        @media (min-width: 576px) {
+            .login-card {
+                padding: 40px 36px;
+            }
+        }
+        .form-control {
+            background-color: #ffffff;
+            border-color: #cbd5e1;
+            color: #0f172a;
+            font-size: 14.5px;
+            border-radius: 9px;
+        }
+        .form-control:focus {
+            background-color: #ffffff;
+            border-color: #ea580c;
+            color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+        }
+        .input-group-text {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: #64748b;
+            border-radius: 9px;
         }
         .btn-brand {
-            background: #c2410c;
+            background: #ea580c;
             color: #ffffff;
             border: none;
             font-weight: 600;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 11px;
+            border-radius: 9px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
         }
         .btn-brand:hover {
-            background: #9a3412;
+            background: #c2410c;
             color: #ffffff;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-warning bg-opacity-10 text-warning mb-2">
-                <i data-lucide="sparkles" style="width:32px;height:32px;"></i>
+            <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-3 bg-warning bg-opacity-10 text-warning mb-2 shadow-xs" style="color: #ea580c !important;">
+                <i data-lucide="sparkles" style="width:30px;height:30px;"></i>
             </div>
-            <h4 class="fw-bold mb-1"><?= e(APP_NAME) ?></h4>
-            <span class="badge bg-warning text-dark text-uppercase px-2 py-1" style="font-size:10px; letter-spacing:1px;">Client Organizer Portal</span>
+            <h4 class="fw-bold mb-1" style="color:#0f172a;"><?= e(APP_NAME) ?></h4>
+            <span class="badge bg-warning bg-opacity-10 text-uppercase px-2.5 py-1 fw-bold" style="color: #ea580c !important; font-size:10.5px; letter-spacing:0.5px;">Client Organizer Space</span>
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
-                <?= e($error) ?>
+            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+                <i data-lucide="alert-circle" style="width:16px;height:16px;"></i>
+                <span><?= e($error) ?></span>
             </div>
         <?php endif; ?>
 
         <form method="POST" action="/client/login">
             <?= csrfInput() ?>
             <div class="mb-3">
-                <label class="form-label small text-muted">Organizer Username</label>
+                <label class="form-label small fw-semibold text-secondary">Organizer Username</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light text-muted"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
+                    <span class="input-group-text"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
                     <input type="text" name="username" class="form-control" placeholder="organizer" value="organizer" required autofocus>
                 </div>
             </div>
 
             <div class="mb-4">
-                <label class="form-label small text-muted">Password</label>
+                <label class="form-label small fw-semibold text-secondary">Staff Password</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light text-muted"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
+                    <span class="input-group-text"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
                     <input type="password" name="password" class="form-control" placeholder="••••••••" value="password123" required>
                 </div>
             </div>
@@ -126,15 +157,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i data-lucide="log-in" style="width:16px;height:16px;"></i> Sign In to Organizer Space
             </button>
 
-            <div class="bg-light p-2 rounded text-center small text-muted">
-                Demo Credentials: <span class="fw-bold text-dark">organizer</span> / <span class="fw-bold text-dark">password123</span>
-                <div class="text-xs text-secondary mt-1">Tenant: Royal Events (royal-events)</div>
+            <div class="bg-light p-3 rounded-3 text-center small border">
+                <div class="text-secondary mb-1">Demo Access Credentials:</div>
+                <div><span class="fw-bold text-dark font-monospace">organizer</span> / <span class="fw-bold text-dark font-monospace">password123</span></div>
+                <div class="text-xs text-muted mt-1" style="font-size:11px;">Tenant: Royal Events (royal-events)</div>
             </div>
         </form>
 
         <div class="text-center mt-4">
-            <a href="/admin/login" class="text-muted small text-decoration-none hover-underline">
-                Access Platform Super Admin &rarr;
+            <a href="/admin/login" class="text-secondary small text-decoration-none hover-underline d-inline-flex align-items-center gap-1">
+                <span>Access Platform Super Admin</span>
+                <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
             </a>
         </div>
     </div>

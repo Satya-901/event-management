@@ -12,5 +12,33 @@
         "slug": "royal-events",
         "created_at": "2026-09-17 07:49:01",
         "updated_at": "2026-09-17 07:49:01"
+    },
+    {
+        "id": "client_sunburn_live_2026",
+        "name": "Sunburn Live Media",
+        "company_name": "Sunburn Entertainment & Concerts India",
+        "email": "events@sunburnlive.in",
+        "mobile": "+91 98200 54321",
+        "address": "Phoenix Marketcity Courtyard, Whitefield, Bengaluru",
+        "logo": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80",
+        "status": "active",
+        "code": "UTS-SNB26",
+        "slug": "sunburn-media",
+        "created_at": "2026-09-18 10:00:00",
+        "updated_at": "2026-09-18 10:00:00"
+    },
+    {
+        "id": "client_bengaluru_tech_2026",
+        "name": "NextGen Tech Community",
+        "company_name": "Bengaluru Innovation & Technology Network",
+        "email": "hello@nextgentech.org",
+        "mobile": "+91 99000 88776",
+        "address": "Indiranagar 100ft Road, Bengaluru",
+        "logo": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=200&q=80",
+        "status": "active",
+        "code": "UTS-TC2026",
+        "slug": "tech-community",
+        "created_at": "2026-09-19 12:00:00",
+        "updated_at": "2026-09-19 12:00:00"
     }
 ]

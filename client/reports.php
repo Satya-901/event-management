@@ -14,20 +14,20 @@ $toDate = $_GET['to_date'] ?? '';
 $report = ReportService::getClientReport($clientId, $selectedEventId ?: null, $fromDate ?: null, $toDate ?: null);
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-0 text-dark">Analytics & Gate Turnout Reports</h4>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Analytics & Gate Turnout Reports</h4>
         <p class="text-muted small mb-0">Track attendee turnout, capacity metrics, and registration velocity.</p>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
         <i data-lucide="printer" style="width:14px;height:14px;"></i> Print Report
     </button>
 </div>
 
 <!-- Filters -->
-<div class="card p-3 bg-white mb-4 shadow-sm">
+<div class="card p-3 mb-4 shadow-xs">
     <form method="GET" action="/client/reports" class="row g-2 align-items-center">
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
             <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">All Events Portfolio</option>
                 <?php foreach ($events as $ev): ?>
@@ -37,46 +37,46 @@ $report = ReportService::getClientReport($clientId, $selectedEventId ?: null, $f
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <input type="date" name="from_date" class="form-control form-control-sm" value="<?= e($fromDate) ?>" placeholder="From Date">
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <input type="date" name="to_date" class="form-control form-control-sm" value="<?= e($toDate) ?>" placeholder="To Date">
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-dark btn-sm w-100">Apply Filter</button>
+        <div class="col-12 col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100 fw-medium shadow-xs" style="background-color:#ea580c !important; border-color:#ea580c !important;">Apply Filter</button>
         </div>
     </form>
 </div>
 
 <!-- Key Stat Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card p-3 bg-white">
-            <div class="text-muted small mb-1">Total Pass Bookings</div>
+<div class="row g-2 g-md-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-xs h-100">
+            <div class="text-muted small mb-1 fw-medium">Total Pass Bookings</div>
             <h3 class="fw-bold text-dark mb-0"><?= $report['total_bookings'] ?></h3>
-            <span class="text-muted text-xs"><?= $report['total_passes'] ?> Total Individual Passes</span>
+            <span class="text-muted text-xs" style="font-size:11px;"><?= $report['total_passes'] ?> Total Passes</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 bg-white">
-            <div class="text-muted small mb-1">Checked-In Attendees</div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-xs h-100">
+            <div class="text-muted small mb-1 fw-medium">Checked-In Attendees</div>
             <h3 class="fw-bold text-success mb-0"><?= $report['checked_in'] ?></h3>
-            <span class="text-success text-xs fw-medium"><?= $report['checkin_progress_pct'] ?>% Turnout</span>
+            <span class="text-success text-xs fw-semibold" style="font-size:11px;"><?= $report['checkin_progress_pct'] ?>% Turnout</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 bg-white">
-            <div class="text-muted small mb-1">Pending Confirmation</div>
-            <h3 class="fw-bold text-warning mb-0"><?= $report['pending'] ?></h3>
-            <span class="text-muted text-xs">Manual approval queue</span>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-xs h-100">
+            <div class="text-muted small mb-1 fw-medium">Pending Approvals</div>
+            <h3 class="fw-bold text-warning mb-0" style="color:#ea580c !important;"><?= $report['pending'] ?></h3>
+            <span class="text-muted text-xs" style="font-size:11px;">Awaiting verification</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 bg-white">
-            <div class="text-muted small mb-1">Remaining Venue Capacity</div>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-xs h-100">
+            <div class="text-muted small mb-1 fw-medium">Remaining Capacity</div>
             <h3 class="fw-bold text-info mb-0"><?= $report['remaining_capacity'] ?></h3>
-            <span class="text-muted text-xs">Seats still open to public</span>
+            <span class="text-muted text-xs" style="font-size:11px;">Seats open to public</span>
         </div>
     </div>
 </div>
