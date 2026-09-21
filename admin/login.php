@@ -10,8 +10,8 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/storage/DataStoreFactory.php';
 require_once __DIR__ . '/../includes/seed.php';
 
-// Ensure demo data is seeded
-seedUtsavamDemoData();
+// Ensure production super admin is initialized
+seedProductionAdmin();
 
 // If already logged in as super admin, redirect to dashboard
 if (isSuperAdmin()) {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 loginUser($user);
                 redirect('/admin/dashboard');
             } else {
-                $error = "Invalid Super Admin credentials. (Demo: admin / admin123)";
+                $error = "Invalid Super Admin credentials. Please verify your credentials.";
             }
         }
     }
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label small fw-semibold text-secondary">Username or Email</label>
                 <div class="input-group">
                     <span class="input-group-text"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="admin" value="admin" required autofocus>
+                    <input type="text" name="username" class="form-control" placeholder="Enter username or email" value="<?= e($_POST['username'] ?? '') ?>" required autofocus autocomplete="username">
                 </div>
             </div>
 
@@ -143,17 +143,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label small fw-semibold text-secondary">Master Password</label>
                 <div class="input-group">
                     <span class="input-group-text"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" value="admin123" required>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" value="" required autocomplete="current-password">
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-admin w-100 mb-3 d-flex align-items-center justify-content-center gap-2">
+            <button type="submit" class="btn btn-admin w-100 mb-2 d-flex align-items-center justify-content-center gap-2">
                 <i data-lucide="log-in" style="width:16px;height:16px;"></i> Authenticate as Super Admin
             </button>
-
-            <div class="bg-light p-2.5 rounded-3 text-center small text-muted border">
-                Demo Credentials: <span class="fw-bold text-dark font-monospace">admin</span> / <span class="fw-bold text-dark font-monospace">admin123</span>
-            </div>
         </form>
 
         <div class="text-center mt-4">

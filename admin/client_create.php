@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $clientCode = generateClientCode();
 
+            $tempPassword = $password ?: bin2hex(random_bytes(6));
+
             $newClient = ClientService::createClient([
                 'name' => $name,
                 'company_name' => $companyName ?: $name,
@@ -46,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'slug' => $slug,
                 'code' => $clientCode,
                 'username' => $username ?: slugify($name),
-                'password' => $password ?: 'password123',
+                'password' => $tempPassword,
                 'status' => 'active'
             ], $currentUser);
 

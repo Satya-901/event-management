@@ -20,9 +20,8 @@ class LeadService {
     private static function readLeads(): array {
         $file = self::getFilePath();
         if (!file_exists($file)) {
-            $initial = self::getInitialSeedLeads();
-            self::writeLeads($initial);
-            return $initial;
+            self::writeLeads([]);
+            return [];
         }
 
         $fp = @fopen($file, 'r');
@@ -214,73 +213,5 @@ class LeadService {
         }
 
         return $stats;
-    }
-
-    /**
-     * Seed initial demo leads for immediate preview in Super Admin
-     */
-    private static function getInitialSeedLeads(): array {
-        return [
-            [
-                'id' => 'lead_seed_001',
-                'inquiry_number' => 'INQ-2026-F82A1',
-                'organizer_name' => 'Vikram Singhania',
-                'organization_name' => 'Kolkata Heritage Arts Trust',
-                'email' => 'vikram@kolkataheritage.org',
-                'phone' => '+91 98301 23456',
-                'event_title' => 'Durga Puja Carnival & Cultural Gala 2026',
-                'event_category' => 'Cultural Celebration',
-                'expected_attendees' => '5,000 - 15,000',
-                'event_date' => 'October 2026',
-                'venue_city' => 'Kolkata, West Bengal',
-                'ticketing_type' => 'Free Registration',
-                'requirements' => 'Need multiple gate entrance camera scanning for volunteer staff and VIP badge validation.',
-                'status' => 'new',
-                'admin_notes' => 'High priority cultural festival. Reach out to Vikram on WhatsApp.',
-                'ip_address' => '103.24.12.85',
-                'created_at' => date('Y-m-d H:i:s', strtotime('-2 hours')),
-                'updated_at' => date('Y-m-d H:i:s', strtotime('-2 hours'))
-            ],
-            [
-                'id' => 'lead_seed_002',
-                'inquiry_number' => 'INQ-2026-B39C2',
-                'organizer_name' => 'Ananya Deshmukh',
-                'organization_name' => 'Pune Indie Soundscapes',
-                'email' => 'ananya@punesoundscapes.in',
-                'phone' => '+91 91234 56789',
-                'event_title' => 'Western Ghats Acoustic & Indie Rock Weekend',
-                'event_category' => 'Music Concert',
-                'expected_attendees' => '1,500 - 3,000',
-                'event_date' => 'November 2026',
-                'venue_city' => 'Pune, Maharashtra',
-                'ticketing_type' => 'Paid Tickets',
-                'requirements' => 'Dynamic attendee form needed for T-shirt size, camping gear preference, and emergency contacts.',
-                'status' => 'contacted',
-                'admin_notes' => 'Sent introductory deck on WhatsApp; awaiting final sponsor confirmation.',
-                'ip_address' => '49.36.88.19',
-                'created_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
-                'updated_at' => date('Y-m-d H:i:s', strtotime('-4 hours'))
-            ],
-            [
-                'id' => 'lead_seed_003',
-                'inquiry_number' => 'INQ-2026-A17D9',
-                'organizer_name' => 'Dr. Rakesh Nair',
-                'organization_name' => 'Kerala AI Innovation Guild',
-                'email' => 'rnair@kerala-ai-summit.org',
-                'phone' => '+91 94471 98765',
-                'event_title' => 'South India GenAI Founders & Dev Summit 2026',
-                'event_category' => 'Tech Conference',
-                'expected_attendees' => '800 - 1,200',
-                'event_date' => 'December 2026',
-                'venue_city' => 'Kochi, Kerala',
-                'ticketing_type' => 'Both (Free & VIP Paid)',
-                'requirements' => 'Requires company name, LinkedIn profile, and dietary selection in attendee registration form.',
-                'status' => 'converted',
-                'admin_notes' => 'Provisioned tenant space; setup completed successfully.',
-                'ip_address' => '117.218.44.102',
-                'created_at' => date('Y-m-d H:i:s', strtotime('-3 days')),
-                'updated_at' => date('Y-m-d H:i:s', strtotime('-1 day'))
-            ]
-        ];
     }
 }

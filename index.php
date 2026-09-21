@@ -11,10 +11,10 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/seed.php';
 
-// Auto-seed demo dataset if missing
-$dataFile = STORAGE_PATH . '/clients.json';
+// Auto-initialize administrator account if missing
+$dataFile = STORAGE_PATH . '/users.json';
 if (!file_exists($dataFile)) {
-    seedDatabase();
+    seedProductionAdmin();
 }
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

@@ -45,10 +45,10 @@ class SqlDataStore implements DataStore {
                     $sql = preg_replace('/USE\s+[`\w]+;/i', '', $sql);
                     $this->pdo->exec($sql);
 
-                    // Seed initial administrative users & client
+                    // Seed initial administrative user
                     require_once __DIR__ . '/../seed.php';
-                    if (function_exists('seedUtsavamDemoData')) {
-                        seedUtsavamDemoData();
+                    if (function_exists('seedProductionAdmin')) {
+                        seedProductionAdmin();
                     }
                 }
             }

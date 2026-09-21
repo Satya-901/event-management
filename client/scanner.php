@@ -59,16 +59,14 @@ $selectedEventId = $_GET['event_id'] ?? '';
             <h6 class="fw-semibold text-dark mb-2">Manual Token / Booking Code Fallback</h6>
             <p class="text-muted small mb-2">In case attendee phone screen is cracked or scanner camera is unavailable:</p>
             <form id="manualVerifyForm" class="input-group">
-                <input type="text" id="manualTokenInput" class="form-control font-monospace" placeholder="Paste Token (e.g. uts_token_priya...)" required>
+                <input type="text" id="manualTokenInput" class="form-control font-monospace" placeholder="Enter or paste QR token / booking reference" required>
                 <button type="submit" class="btn btn-dark fw-medium">
                     <i data-lucide="search" style="width:16px;height:16px;"></i> Verify
                 </button>
             </form>
             <div class="mt-2 text-xs text-muted" style="font-size:11px;">
-                Demo test tokens: 
-                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none font-monospace text-xs" onclick="setToken('uts_token_priya_confirmed_demo_2026')">Priya (Confirmed)</button> • 
-                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none font-monospace text-xs" onclick="setToken('uts_token_amitabh_checkedin_demo_2026')">Amitabh (Checked-In)</button> • 
-                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none font-monospace text-xs" onclick="setToken('uts_token_vikram_cancelled_demo_2026')">Vikram (Cancelled)</button>
+                <i data-lucide="info" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i>
+                <span>Enter the unique token string printed below the QR code or booking reference.</span>
             </div>
         </div>
     </div>

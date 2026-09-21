@@ -4,13 +4,6 @@ require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
 $success = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reseed') {
-    if (validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        require_once __DIR__ . '/../includes/seed.php';
-        seedDatabase();
-        $success = "Demo database successfully re-seeded!";
-    }
-}
 ?>
 
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
@@ -56,14 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </li>
             </ul>
 
-            <div class="mt-4 pt-3 border-top">
-                <form method="POST" onsubmit="return confirm('Re-seed initial demo data (Royal Events, Dandiya Night 2026)?')">
-                    <?= csrfInput() ?>
-                    <input type="hidden" name="action" value="reseed">
-                    <button type="submit" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
-                        <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Reset / Re-Seed Demo Data
-                    </button>
-                </form>
+            <div class="mt-4 pt-3 border-top d-flex align-items-center gap-2 text-success small">
+                <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+                <span class="fw-medium">Storage Engine Healthy & Production-Ready</span>
             </div>
         </div>
     </div>

@@ -318,7 +318,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                             <span class="rounded-circle bg-danger d-inline-block" style="width:10px;height:10px;"></span>
                             <span class="rounded-circle bg-warning d-inline-block" style="width:10px;height:10px;"></span>
                             <span class="rounded-circle bg-success d-inline-block" style="width:10px;height:10px;"></span>
-                            <span class="small font-monospace ms-2 text-white text-opacity-75">utsavam.in/organizer-portal</span>
+                            <span class="small font-monospace ms-2 text-white text-opacity-75">utsavam.digitechitsolution.com/portal</span>
                         </div>
                         <span class="badge bg-warning text-dark fw-bold font-monospace" style="font-size:10px;">LIVE PANEL</span>
                     </div>
@@ -326,8 +326,8 @@ require_once __DIR__ . '/../includes/csrf.php';
                     <div class="p-4">
                         <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                             <div>
-                                <h6 class="fw-bold text-dark mb-0">Royal Celebrations Management</h6>
-                                <span class="text-muted small" style="font-size: 12px;">Portal URL: <code>/royal-events/</code></span>
+                                <h6 class="fw-bold text-dark mb-0">Apex Event Management</h6>
+                                <span class="text-muted small" style="font-size: 12px;">Portal URL: <code>/apex-events/</code></span>
                             </div>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill fw-bold" style="font-size: 11px;">
                                 ACTIVE ORGANIZER
@@ -594,10 +594,10 @@ require_once __DIR__ . '/../includes/csrf.php';
 
                 <div class="d-flex gap-3 flex-wrap">
                     <a href="/client/scanner" class="btn btn-dark px-4 py-2 fw-semibold rounded-3 shadow-sm">
-                        <i data-lucide="camera" style="width:16px;height:16px;"></i> Test Scanner in Organizer Space
+                        <i data-lucide="camera" style="width:16px;height:16px;"></i> Open Gate Camera Scanner
                     </a>
-                    <a href="/verify/uts_token_priya_confirmed_demo_2026" class="btn btn-outline-dark px-4 py-2 rounded-3">
-                        <i data-lucide="eye" style="width:16px;height:16px;"></i> Inspect Sample Digital Pass
+                    <a href="#list-your-event" class="btn btn-outline-dark px-4 py-2 rounded-3">
+                        <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Onboard Your Event
                     </a>
                 </div>
             </div>
@@ -616,7 +616,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                     <!-- Visual Viewfinder Mockup -->
                     <div class="p-4 rounded-3 text-center position-relative mb-3" style="background:#1c1917; color:white; min-height: 220px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
                         <div style="border: 2px dashed #f59e0b; width: 140px; height: 140px; border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=uts_token_demo_sample_token" alt="QR" style="opacity: 0.85; width: 100px; height: 100px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=https%3A%2F%2Futsavam.digitechitsolution.com" alt="QR" style="opacity: 0.85; width: 100px; height: 100px;">
                             <div style="position: absolute; top:0; left:0; right:0; height: 2px; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></div>
                         </div>
                         <div class="small text-warning mt-2 font-monospace">ALIGN QR CODE WITHIN TARGET</div>
@@ -628,8 +628,8 @@ require_once __DIR__ . '/../includes/csrf.php';
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-success p-2 rounded-circle"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
                                 <div>
-                                    <div class="fw-bold text-dark small">Priya Patel (2 Passes Confirmed)</div>
-                                    <div class="text-muted" style="font-size: 11px;">Scanned at 07:14 PM • Turnstile Gate #2</div>
+                                    <div class="fw-bold text-dark small">Attendee Check-In (Pass Verified)</div>
+                                    <div class="text-muted" style="font-size: 11px;">Verified Entry • Turnstile Gate #2</div>
                                 </div>
                             </div>
                             <span class="badge bg-success text-white fw-bold">ACCESS GRANTED</span>
@@ -922,11 +922,11 @@ require_once __DIR__ . '/../includes/csrf.php';
                     <div class="p-4 bg-white bg-opacity-10 backdrop-blur rounded-4 border border-white border-opacity-20 text-start">
                         <div class="d-flex align-items-center gap-2 text-warning fw-bold small mb-2">
                             <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
-                            <span>INSTANT ACCESS</span>
+                            <span>ENTERPRISE READY</span>
                         </div>
-                        <h6 class="text-white fw-bold mb-2">Live Demo Organizer Space</h6>
+                        <h6 class="text-white fw-bold mb-2">Dedicated Organizer Portal</h6>
                         <p class="text-light text-opacity-75 small mb-3">
-                            Inspect how your white-label portal and turnstile camera scanner look in practice.
+                            Get your own branded custom domain, ticketing forms, and multi-volunteer gate scanner tools.
                         </p>
                         <a href="#list-your-event" class="btn btn-light btn-sm w-100 fw-semibold text-dark">
                             Request Your Organizer Portal &rarr;
@@ -1082,9 +1082,9 @@ require_once __DIR__ . '/../includes/csrf.php';
                     <li class="mb-2"><a href="/admin/login" class="text-secondary text-decoration-none hover-white">Super Admin Command Center &rarr;</a></li>
                 </ul>
                 <div class="p-3 bg-secondary bg-opacity-10 rounded border border-secondary border-opacity-25">
-                    <div class="text-warning small fw-bold mb-1">Live Pass Demo:</div>
-                    <a href="/verify/uts_token_priya_confirmed_demo_2026" class="btn btn-outline-warning btn-sm w-100 font-monospace" style="font-size: 11px;">
-                        Inspect Verified Digital Pass &rarr;
+                    <div class="text-white small fw-bold mb-1">Host Your Next Event:</div>
+                    <a href="#list-your-event" class="btn btn-outline-warning btn-sm w-100 fw-medium" style="font-size: 11px;">
+                        Onboard With Utsavam &rarr;
                     </a>
                 </div>
             </div>

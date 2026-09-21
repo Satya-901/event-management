@@ -455,8 +455,8 @@ $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
             <a href="/admin/clients/create" class="btn btn-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 shadow-sm">
                 <i data-lucide="plus" style="width:15px;height:15px;"></i> Provision New Client
             </a>
-            <a href="/royal-events/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
-                <i data-lucide="external-link" style="width:14px;height:14px;"></i> Demo Space
+            <a href="/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 px-3 py-1.5">
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i> View Public Website
             </a>
         </div>
     </div>

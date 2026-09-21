@@ -83,16 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                     <a href="/<?= e($c['slug']) ?>/" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2.5 text-xs d-inline-flex align-items-center gap-1" title="Visit Public URL">
                                         <i data-lucide="globe" style="width:13px;height:13px;"></i> View
                                     </a>
-                                    <?php if ($c['slug'] !== 'royal-events'): ?>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Delete client <?= e(addslashes($c['name'])) ?> and all their events/bookings?')">
-                                            <?= csrfInput() ?>
-                                            <input type="hidden" name="action" value="delete_client">
-                                            <input type="hidden" name="client_id" value="<?= e($c['id']) ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 text-xs">
-                                                <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete client <?= e(addslashes($c['name'])) ?> and all their events/bookings?')">
+                                        <?= csrfInput() ?>
+                                        <input type="hidden" name="action" value="delete_client">
+                                        <input type="hidden" name="client_id" value="<?= e($c['id']) ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 text-xs" title="Delete Client">
+                                            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

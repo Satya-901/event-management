@@ -108,9 +108,9 @@
                 <i data-lucide="sliders" style="width:18px;height:18px;"></i>
                 <span>System Config & DB</span>
             </a>
-            <a href="/royal-events/" target="_blank" class="drawer-nav-item text-secondary">
+            <a href="/" target="_blank" class="drawer-nav-item text-secondary">
                 <i data-lucide="external-link" style="width:18px;height:18px;"></i>
-                <span>Preview Demo Space</span>
+                <span>View Public Website</span>
             </a>
         </div>
 

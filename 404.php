@@ -69,8 +69,8 @@ http_response_code(404);
             <a href="/" class="btn btn-brand d-inline-flex align-items-center gap-2">
                 <i data-lucide="home" style="width:16px;height:16px;"></i> Return Home
             </a>
-            <a href="/royal-events/" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
-                <i data-lucide="calendar" style="width:16px;height:16px;"></i> Demo Events
+            <a href="/#list-your-event" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+                <i data-lucide="mail" style="width:16px;height:16px;"></i> Contact Support
             </a>
         </div>
     </div>

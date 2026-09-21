@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="row g-3">
         <div class="col-md-8">
             <label class="form-label small fw-semibold text-secondary">Event Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" class="form-control" placeholder="e.g. Dandiya Night 2026" required>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Annual Grand Celebration 2026" required>
         </div>
         <div class="col-md-4">
             <label class="form-label small fw-semibold text-secondary">Event Category</label>

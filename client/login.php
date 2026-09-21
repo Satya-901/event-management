@@ -10,9 +10,6 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/storage/DataStoreFactory.php';
 require_once __DIR__ . '/../includes/seed.php';
 
-// Ensure demo data is seeded
-seedUtsavamDemoData();
-
 // If already logged in as client organizer, redirect to dashboard
 if (isClientUser()) {
     redirect('/client/dashboard');
@@ -41,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     redirect('/client/dashboard');
                 }
             } else {
-                $error = "Invalid organizer credentials. (Demo: organizer / password123)";
+                $error = "Invalid organizer credentials. Please check your username and password.";
             }
         }
     }
@@ -141,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label small fw-semibold text-secondary">Organizer Username</label>
                 <div class="input-group">
                     <span class="input-group-text"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="organizer" value="organizer" required autofocus>
+                    <input type="text" name="username" class="form-control" placeholder="Enter username" value="<?= e($_POST['username'] ?? '') ?>" required autofocus autocomplete="username">
                 </div>
             </div>
 
@@ -149,19 +146,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label small fw-semibold text-secondary">Staff Password</label>
                 <div class="input-group">
                     <span class="input-group-text"><i data-lucide="lock" style="width:16px;height:16px;"></i></span>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" value="password123" required>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" value="" required autocomplete="current-password">
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-brand w-100 mb-3 d-flex align-items-center justify-content-center gap-2">
+            <button type="submit" class="btn btn-brand w-100 mb-2 d-flex align-items-center justify-content-center gap-2">
                 <i data-lucide="log-in" style="width:16px;height:16px;"></i> Sign In to Organizer Space
             </button>
-
-            <div class="bg-light p-3 rounded-3 text-center small border">
-                <div class="text-secondary mb-1">Demo Access Credentials:</div>
-                <div><span class="fw-bold text-dark font-monospace">organizer</span> / <span class="fw-bold text-dark font-monospace">password123</span></div>
-                <div class="text-xs text-muted mt-1" style="font-size:11px;">Tenant: Royal Events (royal-events)</div>
-            </div>
         </form>
 
         <div class="text-center mt-4">
