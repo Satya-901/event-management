@@ -203,3 +203,29 @@ CREATE TABLE IF NOT EXISTS `settings` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`setting_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Event Inquiries & Organizer Leads
+CREATE TABLE IF NOT EXISTS `event_leads` (
+    `id` VARCHAR(64) NOT NULL,
+    `inquiry_number` VARCHAR(32) NOT NULL UNIQUE,
+    `organizer_name` VARCHAR(191) NOT NULL,
+    `organization_name` VARCHAR(191) NULL,
+    `email` VARCHAR(191) NULL,
+    `phone` VARCHAR(32) NOT NULL,
+    `event_title` VARCHAR(255) NOT NULL,
+    `event_category` VARCHAR(100) NULL,
+    `expected_attendees` VARCHAR(100) NULL,
+    `event_date` VARCHAR(100) NULL,
+    `venue_city` VARCHAR(100) NULL,
+    `ticketing_type` VARCHAR(100) NULL,
+    `requirements` TEXT NULL,
+    `status` ENUM('new', 'contacted', 'converted', 'archived') NOT NULL DEFAULT 'new',
+    `admin_notes` TEXT NULL,
+    `ip_address` VARCHAR(45) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_lead_status` (`status`),
+    INDEX `idx_lead_phone` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

@@ -24,12 +24,37 @@ class SqlDataStore implements DataStore {
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]);
-            } catch (PDOException $e) {
+                $this->ensureSchema();
+            } catch (Throwable $e) {
                 // In local or json mode, handle gracefully
                 throw new Exception("SQL Database connection failed: " . $e->getMessage());
             }
         }
         return $this->pdo;
+    }
+
+    protected function ensureSchema(): void {
+        try {
+            $check = $this->pdo->query("SHOW TABLES LIKE 'clients'")->fetch();
+            if (!$check) {
+                $schemaFile = __DIR__ . '/../../database/schema.sql';
+                if (file_exists($schemaFile)) {
+                    $sql = file_get_contents($schemaFile);
+                    // Remove CREATE DATABASE and USE statements so it executes inside connected database
+                    $sql = preg_replace('/CREATE\s+DATABASE[^\;]+;/i', '', $sql);
+                    $sql = preg_replace('/USE\s+[`\w]+;/i', '', $sql);
+                    $this->pdo->exec($sql);
+
+                    // Seed initial administrative users & client
+                    require_once __DIR__ . '/../seed.php';
+                    if (function_exists('seedUtsavamDemoData')) {
+                        seedUtsavamDemoData();
+                    }
+                }
+            }
+        } catch (Throwable $t) {
+            error_log("Schema auto-provision notice: " . $t->getMessage());
+        }
     }
 
     public function getClients(): array {
