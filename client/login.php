@@ -156,9 +156,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div class="text-center mt-4">
-            <a href="/admin/login" class="text-secondary small text-decoration-none hover-underline d-inline-flex align-items-center gap-1">
-                <span>Access Platform Super Admin</span>
-                <i data-lucide="arrow-right" style="width:13px;height:13px;"></i>
+            <a href="/" class="text-secondary small text-decoration-none hover-underline d-inline-flex align-items-center gap-1">
+                <i data-lucide="arrow-left" style="width:13px;height:13px;"></i>
+                <span>Back to Homepage</span>
             </a>
         </div>
     </div>

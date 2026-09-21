@@ -376,8 +376,8 @@ require_once __DIR__ . '/../includes/csrf.php';
                         </div>
 
                         <div class="d-grid gap-2">
-                            <a href="/client/login" class="btn btn-dark btn-sm fw-bold py-2">
-                                Login to Organizer Portal &rarr;
+                            <a href="#list-your-event" class="btn btn-dark btn-sm fw-bold py-2">
+                                Host Your Event With Utsavam &rarr;
                             </a>
                         </div>
                     </div>
@@ -593,11 +593,11 @@ require_once __DIR__ . '/../includes/csrf.php';
                 </div>
 
                 <div class="d-flex gap-3 flex-wrap">
-                    <a href="/client/scanner" class="btn btn-dark px-4 py-2 fw-semibold rounded-3 shadow-sm">
-                        <i data-lucide="camera" style="width:16px;height:16px;"></i> Open Gate Camera Scanner
+                    <a href="#list-your-event" class="btn btn-dark px-4 py-2 fw-semibold rounded-3 shadow-sm">
+                        <i data-lucide="camera" style="width:16px;height:16px;"></i> Request Gate Scanner Access
                     </a>
-                    <a href="#list-your-event" class="btn btn-outline-dark px-4 py-2 rounded-3">
-                        <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Onboard Your Event
+                    <a href="#what-you-get" class="btn btn-outline-dark px-4 py-2 rounded-3">
+                        <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Explore Platform Features
                     </a>
                 </div>
             </div>
@@ -763,7 +763,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                         <div class="small text-white text-opacity-85">
                             <i data-lucide="phone-forwarded" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-top:-2px;" class="text-warning"></i> Response Time: <strong>Within 15 Minutes</strong>
                         </div>
-                        <span class="badge bg-white bg-opacity-20 text-white font-monospace" style="font-size:11px;">SUPER ADMIN DESK</span>
+                        <span class="badge bg-white bg-opacity-20 text-white font-monospace" style="font-size:11px;">ONBOARDING DESK</span>
                     </div>
                 </div>
 
@@ -874,7 +874,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                         </div>
                         <h4 class="fw-black text-dark mb-2" style="font-weight: 800;">Request Received! Callback Scheduled</h4>
                         <p class="text-muted small mb-3" style="max-width: 440px; margin: 0 auto;">
-                            Thank you! Your event inquiry has been logged in our Super Admin desk. An onboarding manager will reach out shortly to review your ticketing model, digital passes, and gate scanners.
+                            Thank you! Your event inquiry has been logged with our onboarding team. A platform manager will reach out shortly to review your ticketing model, digital passes, and gate scanners.
                         </p>
                         <div class="p-3 bg-light rounded-3 border d-inline-block text-start mb-4" style="min-width: 280px;">
                             <div class="text-muted small" style="font-size: 11px;">YOUR INQUIRY REFERENCE:</div>
@@ -1075,11 +1075,11 @@ require_once __DIR__ . '/../includes/csrf.php';
             </div>
 
             <div class="col-6 col-lg-4">
-                <h6 class="text-white fw-bold mb-3">Access Portals</h6>
+                <h6 class="text-white fw-bold mb-3">Organizer Inquiries</h6>
                 <ul class="list-unstyled text-secondary small mb-3">
-                    <li class="mb-2"><a href="/client/login" class="text-secondary text-decoration-none hover-white">Organizer Portal Login &rarr;</a></li>
-                    <li class="mb-2"><a href="/client/scanner" class="text-secondary text-decoration-none hover-white">Gate Turnstile Scanner Tool &rarr;</a></li>
-                    <li class="mb-2"><a href="/admin/login" class="text-secondary text-decoration-none hover-white">Super Admin Command Center &rarr;</a></li>
+                    <li class="mb-2"><a href="#list-your-event" class="text-secondary text-decoration-none hover-white">List Your Event &rarr;</a></li>
+                    <li class="mb-2"><a href="#what-you-get" class="text-secondary text-decoration-none hover-white">Organizer Toolkit &rarr;</a></li>
+                    <li class="mb-2"><a href="#verification-scanner" class="text-secondary text-decoration-none hover-white">Gate Turnstile Tech &rarr;</a></li>
                 </ul>
                 <div class="p-3 bg-secondary bg-opacity-10 rounded border border-secondary border-opacity-25">
                     <div class="text-white small fw-bold mb-1">Host Your Next Event:</div>
@@ -1186,7 +1186,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                     </div>
                     <h4 class="fw-black text-dark mb-2" style="font-weight: 800;">Request Received!</h4>
                     <p class="text-muted small mb-3">
-                        Thank you! Your event inquiry has been logged in the Utsavam Super Admin desk. An onboarding manager will call you shortly.
+                        Thank you! Your event inquiry has been logged with our onboarding team. A platform manager will call you shortly.
                     </p>
                     <div class="p-3 bg-light rounded-3 border d-inline-block text-start mb-4" style="min-width: 260px;">
                         <div class="text-muted small" style="font-size: 11px;">INQUIRY REFERENCE:</div>
