@@ -184,36 +184,163 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 
         /* Top Brand Navbar */
         .site-header {
-            background: #ffffff;
-            border-bottom: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
             position: sticky;
             top: 0;
             z-index: 1020;
+            transition: all 0.2s ease;
+        }
+        .nav-brand-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #111827;
+            letter-spacing: -0.2px;
+        }
+        .nav-brand-logo {
+            height: 34px;
+            width: auto;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+        .nav-brand-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #dc2626;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+        }
+        .nav-breadcrumb-link {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.15s ease;
+        }
+        .nav-breadcrumb-link:hover {
+            color: #0f172a;
+        }
+        .btn-nav-outline {
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            background: #ffffff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .btn-nav-outline:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+        .btn-nav-primary {
+            background-color: var(--brand-red);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 7px 18px;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-nav-primary:hover {
+            background-color: var(--brand-red-hover);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+            transform: translateY(-1px);
         }
 
-        /* Event Header */
+        /* Event Header (Title, Date, Time & Venue exactly matching reference) */
+        .event-header-block {
+            margin-bottom: 24px;
+            padding-top: 8px;
+        }
         .event-main-title {
-            font-size: 2.25rem;
+            font-size: 2.35rem;
             font-weight: 800;
             color: var(--text-dark);
-            letter-spacing: -0.5px;
-            line-height: 1.25;
+            letter-spacing: -0.025em;
+            line-height: 1.22;
+            margin-bottom: 8px;
+            word-wrap: break-word;
         }
-        @media (max-width: 768px) {
-            .event-main-title {
-                font-size: 1.75rem;
-            }
+        .event-meta-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 1.05rem;
+            line-height: 1.5;
         }
-
         .event-datetime-highlight {
             color: var(--brand-red);
             font-weight: 700;
-            font-size: 1.05rem;
+            white-space: nowrap;
+        }
+        .event-pipe-separator {
+            color: #9ca3af;
+            margin: 0 12px;
+            font-weight: 300;
+            user-select: none;
+        }
+        .event-venue-highlight {
+            color: #4b5563;
+            font-weight: 400;
         }
 
-        .event-venue-highlight {
-            color: var(--text-muted);
-            font-size: 1.05rem;
+        @media (max-width: 768px) {
+            .event-main-title {
+                font-size: 1.65rem;
+                letter-spacing: -0.015em;
+                line-height: 1.25;
+                margin-bottom: 10px;
+            }
+            .event-meta-line {
+                font-size: 0.95rem;
+            }
+            .event-pipe-separator {
+                margin: 0 8px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .event-header-block {
+                margin-bottom: 18px;
+                padding-top: 2px;
+            }
+            .event-pipe-separator {
+                display: none;
+            }
+            .event-venue-highlight {
+                display: block;
+                width: 100%;
+                margin-top: 4px;
+                font-size: 0.92rem;
+                color: #6b7280;
+            }
+            .event-datetime-highlight {
+                font-size: 0.95rem;
+            }
         }
 
         /* Hero Banner Image */
@@ -508,47 +635,60 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 </head>
 <body>
 
-<!-- Top Minimal Navbar -->
-<header class="site-header py-2.5">
+<!-- Top Sleek Navbar -->
+<header class="site-header py-2">
     <div class="container d-flex align-items-center justify-content-between">
-        <a href="/<?= e($client['slug']) ?>/" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
-            <?php if (!empty($client['logo'])): ?>
-                <img src="<?= e($client['logo']) ?>" alt="<?= e($client['name']) ?>" style="height:32px;border-radius:4px;">
-            <?php else: ?>
-                <div class="bg-danger text-white fw-bold rounded-2 px-2 py-1 small"><?= strtoupper(substr($client['name'] ?? 'AK', 0, 2)) ?></div>
-            <?php endif; ?>
-            <span class="fw-bold fs-6 text-dark"><?= e($client['name']) ?></span>
-        </a>
+        <div class="d-flex align-items-center gap-3">
+            <a href="/<?= e($client['slug']) ?>/" class="d-flex align-items-center gap-2.5 text-decoration-none">
+                <?php if (!empty($client['logo'])): ?>
+                    <img src="<?= e($client['logo']) ?>" alt="<?= e($client['name']) ?>" class="nav-brand-logo">
+                <?php else: ?>
+                    <div class="nav-brand-avatar"><?= strtoupper(substr($client['name'] ?? 'AK', 0, 2)) ?></div>
+                <?php endif; ?>
+                <span class="nav-brand-title"><?= e($client['company_name'] ?? $client['name']) ?></span>
+            </a>
+            
+            <div class="d-none d-md-flex align-items-center gap-2 text-xs ps-3 border-start" style="border-color:#e2e8f0 !important;">
+                <a href="/<?= e($client['slug']) ?>/" class="nav-breadcrumb-link">Events</a>
+                <span class="text-muted" style="font-size:11px;">/</span>
+                <span class="text-dark fw-semibold text-truncate" style="max-width: 220px;"><?= e($event['name']) ?></span>
+            </div>
+        </div>
+
         <div class="d-flex align-items-center gap-2">
-            <a href="/<?= e($client['slug']) ?>/" class="btn btn-sm btn-outline-secondary d-none d-sm-inline-flex">All Events</a>
-            <button type="button" class="btn btn-sm btn-danger fw-semibold px-3 shadow-xs" data-bs-toggle="modal" data-bs-target="#bookingModal">
-                Book Tickets
+            <a href="/<?= e($client['slug']) ?>/" class="btn-nav-outline d-none d-sm-inline-flex">
+                <i data-lucide="grid" style="width:14px;height:14px;"></i>
+                <span>All Events</span>
+            </a>
+            <button type="button" class="btn-nav-primary" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                <i data-lucide="ticket" style="width:15px;height:15px;"></i>
+                <span>Book Tickets</span>
             </button>
         </div>
     </div>
 </header>
 
-<main class="container py-4 py-md-5">
+<main class="container py-3 py-md-4">
 
     <!-- Flash Error Message if any -->
     <?php if ($error): ?>
-        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 shadow-xs">
-            <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
+        <div class="alert alert-danger py-2.5 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 shadow-xs border-0">
+            <i data-lucide="alert-circle" style="width:18px;height:18px;" class="flex-shrink-0"></i>
             <span><?= e($error) ?></span>
         </div>
     <?php endif; ?>
 
     <!-- 1. TOP HEADER: Event Title & Red Subtitle Date/Venue (Exact Match to Reference) -->
-    <div class="mb-4">
-        <h1 class="event-main-title mb-2">
+    <div class="event-header-block">
+        <h1 class="event-main-title">
             <?= e($event['name']) ?>
         </h1>
-        <div class="d-flex flex-wrap align-items-center">
+        <div class="event-meta-line">
             <span class="event-datetime-highlight">
                 <?= e($formattedDate) ?>, <?= e($timeRangeString) ?>
             </span>
-            <span class="text-muted mx-2 d-none d-sm-inline">|</span>
-            <span class="event-venue-highlight d-block d-sm-inline mt-1 mt-sm-0">
+            <span class="event-pipe-separator">|</span>
+            <span class="event-venue-highlight">
                 <?= e($fullVenueAddress) ?>
             </span>
         </div>
