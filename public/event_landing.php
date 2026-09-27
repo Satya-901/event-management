@@ -75,8 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $totalAmount = $pkgPrice * $passCount;
             $utrNumber = trim($_POST['utr_number'] ?? '');
 
-            if ($totalAmount > 0 && empty($utrNumber)) {
-                throw new Exception("Please enter your 12-digit UTR / UPI Transaction Reference Number after completing payment.");
+            if ($totalAmount > 0) {
+                $organizerUpi = trim($client['upi_id'] ?? '');
+                if (empty($organizerUpi)) {
+                    throw new Exception("Organizer UPI ID is not configured in the system. Online payments cannot be accepted. Please contact the event organizer.");
+                }
+                if (empty($utrNumber)) {
+                    throw new Exception("Please enter your 12-digit UTR / UPI Transaction Reference Number after completing payment.");
+                }
             }
 
             $bookingData = [
@@ -115,6 +121,12 @@ if (!empty($packages) && is_array($packages)) {
         $startingPrice = min($prices);
     }
 }
+
+// Organizer UPI Configuration Check (NO DUMMY FALLBACKS)
+$organizerUpiId = trim($client['upi_id'] ?? '');
+$organizerUpiName = trim($client['upi_name'] ?? ($client['company_name'] ?? $client['name'] ?? ''));
+$organizerCustomQr = trim($client['upi_qr_code'] ?? '');
+$hasUpiConfigured = !empty($organizerUpiId);
 
 // Formatted Date & Time Strings
 $startDateRaw = strtotime($event['start_date'] ?? date('Y-m-d'));
@@ -670,6 +682,85 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
         #bookingModal .modal-footer {
             flex-shrink: 0;
         }
+
+        /* Step Form Tracker */
+        .step-tracker-container {
+            position: relative;
+            padding: 8px 12px 2px 12px;
+            margin-top: 4px;
+        }
+        .step-progress-line {
+            position: absolute;
+            top: 22px;
+            left: 50px;
+            right: 50px;
+            height: 3px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+        .step-progress-fill {
+            position: absolute;
+            top: 22px;
+            left: 50px;
+            height: 3px;
+            background: var(--brand-red);
+            z-index: 2;
+            transition: width 0.3s ease;
+        }
+        .step-indicators-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 3;
+        }
+        .step-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+        }
+        .step-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .step-indicator.active .step-circle {
+            background: var(--brand-red);
+            border-color: var(--brand-red);
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
+        }
+        .step-indicator.active .step-label {
+            color: var(--brand-red);
+            font-weight: 700;
+        }
+        .step-indicator.completed .step-circle {
+            background: #10b981;
+            border-color: #10b981;
+            color: #ffffff;
+        }
+        .step-indicator.completed .step-label {
+            color: #10b981;
+        }
     </style>
 </head>
 <body>
@@ -933,31 +1024,58 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
     </div>
 </main>
 
-<!-- ================= TICKET BOOKING MODAL ================= -->
+<!-- ================= TICKET BOOKING MODAL (MULTI-STEP FORM) ================= -->
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <form method="POST" action="<?= e($_SERVER['REQUEST_URI']) ?>" id="eventBookingForm" class="modal-content border-0 shadow">
             <?= csrfInput() ?>
             <input type="hidden" name="action" value="book_event">
             
-            <div class="modal-header border-bottom py-3 px-4 bg-light">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="bookingModalLabel">
-                        <i data-lucide="ticket" class="text-danger" style="width:20px;height:20px;"></i>
-                        Book Passes — <?= e($event['name']) ?>
-                    </h5>
-                    <div class="text-muted text-xs"><?= e($formattedDate) ?> • <?= e($timeRangeString) ?></div>
+            <!-- Step Tracker Header -->
+            <div class="modal-header border-bottom py-3 px-4 bg-light flex-column align-items-stretch">
+                <div class="d-flex justify-content-between align-items-center mb-2.5">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="bookingModalLabel">
+                            <i data-lucide="ticket" class="text-danger" style="width:20px;height:20px;"></i>
+                            Book Passes — <?= e($event['name']) ?>
+                        </h5>
+                        <div class="text-muted text-xs mt-0.5"><?= e($formattedDate) ?> • <?= e($timeRangeString) ?></div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                <!-- Step Tracker Bar -->
+                <div class="step-tracker-container">
+                    <div class="step-progress-line"></div>
+                    <div class="step-progress-fill" id="stepProgressFill" style="width: 0%;"></div>
+                    <div class="step-indicators-wrap">
+                        <div class="step-indicator active" id="stepInd1" onclick="goToStep(1)">
+                            <div class="step-circle" id="stepCircle1">1</div>
+                            <div class="step-label">Passes</div>
+                        </div>
+                        <div class="step-indicator" id="stepInd2" onclick="goToStep(2)">
+                            <div class="step-circle" id="stepCircle2">2</div>
+                            <div class="step-label">Attendee Details</div>
+                        </div>
+                        <div class="step-indicator" id="stepInd3" onclick="goToStep(3)">
+                            <div class="step-circle" id="stepCircle3">3</div>
+                            <div class="step-label">Payment & UTR</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-body p-4">
-                    
-                    <!-- 1. Select Ticket Pass Package -->
-                    <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5">
-                        <i data-lucide="layers" class="text-danger" style="width:16px;height:16px;"></i>
-                        1. Select Pass Category
-                    </h6>
+                
+                <!-- ================= STEP 1: PASS CATEGORY & QUANTITY ================= -->
+                <div id="bookingStep1" class="booking-step">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                            <i data-lucide="layers" class="text-danger" style="width:16px;height:16px;"></i>
+                            Step 1: Choose Your Pass Category
+                        </h6>
+                        <span class="badge bg-light text-secondary border text-xs">Step 1 of 3</span>
+                    </div>
 
                     <?php if (!empty($packages) && is_array($packages)): ?>
                         <div class="row g-2 mb-3" id="packageListContainer">
@@ -996,8 +1114,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         </div>
                     <?php endif; ?>
 
-                    <!-- 2. Pass Count -->
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-3">
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Number of Passes</label>
                             <div class="input-group">
@@ -1007,7 +1124,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             </div>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Pass Summary</label>
+                            <label class="form-label small fw-semibold text-secondary">Selection Summary</label>
                             <div class="p-2 border rounded-2 bg-light d-flex justify-content-between align-items-center" style="height:38px;">
                                 <span class="small text-muted" id="modalSelectedPkgName">1 × Pass</span>
                                 <span class="fw-bolder text-danger fs-6" id="modalTotalDisplay">₹ <?= number_format($startingPrice) ?></span>
@@ -1015,24 +1132,43 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         </div>
                     </div>
 
-                    <!-- 3. Attendee Information -->
-                    <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5 border-top pt-3">
-                        <i data-lucide="user-check" class="text-danger" style="width:16px;height:16px;"></i>
-                        2. Attendee Contact Details
-                    </h6>
+                    <div class="p-3 bg-light rounded-3 border small text-muted d-flex align-items-center gap-2">
+                        <i data-lucide="info" class="text-danger flex-shrink-0" style="width:16px;height:16px;"></i>
+                        <span>Select your category and passes quantity. Click <strong>Continue</strong> to proceed to Attendee Details.</span>
+                    </div>
+                </div>
 
-                    <div class="row g-3 mb-3">
+                <!-- ================= STEP 2: ATTENDEE REGISTRATION DETAILS ================= -->
+                <div id="bookingStep2" class="booking-step d-none">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                            <i data-lucide="user-check" class="text-danger" style="width:16px;height:16px;"></i>
+                            Step 2: Attendee Registration Information
+                        </h6>
+                        <span class="badge bg-light text-secondary border text-xs">Step 2 of 3</span>
+                    </div>
+
+                    <!-- Pass recap card -->
+                    <div class="p-2.5 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 d-flex justify-content-between align-items-center mb-3">
+                        <div class="small text-dark">
+                            <span class="text-muted">Selected Pass:</span> <strong id="step2SummaryPass">1 × Pass</strong>
+                        </div>
+                        <div class="fw-bolder text-danger" id="step2SummaryTotal">₹ <?= number_format($startingPrice) ?></div>
+                    </div>
+
+                    <div class="row g-3 mb-2">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="customer_name" class="form-control" placeholder="Attendee name" required>
+                            <input type="text" name="customer_name" id="inputCustomerName" class="form-control" placeholder="Attendee full name" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">WhatsApp Mobile <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" class="form-control" placeholder="+91 98765 43210" required>
+                            <input type="tel" name="phone" id="inputPhone" class="form-control font-monospace" placeholder="+91 98765 43210" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold text-secondary">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control" placeholder="name@domain.com" required>
+                            <input type="email" name="email" id="inputEmail" class="form-control" placeholder="attendee@domain.com" required>
+                            <div class="form-text text-xs">Official entry QR pass will be emailed to this address once verified.</div>
                         </div>
 
                         <!-- Dynamic custom form fields if configured for this event -->
@@ -1054,25 +1190,44 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             </div>
                         <?php endforeach; ?>
                     </div>
+                </div>
 
-                    <!-- 3. UPI Scan & Pay Section (Shown when Payable Amount > 0) -->
-                    <div id="modalUpiPaymentSection" class="border-top pt-3 mt-3 <?= ($startingPrice > 0) ? '' : 'd-none' ?>">
-                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center justify-content-between">
-                            <span class="d-flex align-items-center gap-1.5">
-                                <i data-lucide="qr-code" class="text-danger" style="width:16px;height:16px;"></i>
-                                3. Pay via UPI & Enter UTR Number
-                            </span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-xs">
-                                Instant Verification
-                            </span>
+                <!-- ================= STEP 3: UPI PAYMENT & UTR ================= -->
+                <div id="bookingStep3" class="booking-step d-none">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                            <i data-lucide="qr-code" class="text-danger" style="width:16px;height:16px;"></i>
+                            Step 3: UPI Payment & UTR Reference
                         </h6>
+                        <span class="badge bg-light text-secondary border text-xs">Step 3 of 3</span>
+                    </div>
 
+                    <?php if (!$hasUpiConfigured): ?>
+                        <!-- STRICT ERROR: Organizer has not configured UPI ID (NO DUMMY FALLBACKS) -->
+                        <div class="alert alert-danger p-3.5 rounded-3 border-danger mb-3 shadow-xs">
+                            <div class="d-flex align-items-center gap-2 mb-2 text-danger fw-bold fs-6">
+                                <i data-lucide="alert-octagon" style="width:20px;height:20px;"></i>
+                                <span>Organizer Payment Setup Incomplete</span>
+                            </div>
+                            <p class="small text-dark mb-2" style="line-height:1.5;">
+                                The event organizer (<strong><?= e($client['company_name'] ?? $client['name']) ?></strong>) has not configured their receiver UPI ID in the backend system.
+                            </p>
+                            <div class="text-xs text-danger fw-semibold mb-2">
+                                <i data-lucide="shield-x" style="width:14px;height:14px;vertical-align:-2px;"></i>
+                                For security, dummy/fake payment accounts are strictly disabled. Online payments cannot be accepted until the organizer adds their official UPI ID.
+                            </div>
+                            <div class="text-xs text-muted pt-2 border-top">
+                                Organizer Support: <strong><?= e($event['contact_phone'] ?? $client['mobile'] ?? 'Contact Organizer') ?></strong>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <!-- VALID UPI CONFIGURED: Real QR & Payee details -->
                         <div class="card p-3 border-danger border-opacity-25 bg-danger bg-opacity-10 rounded-3 mb-3">
                             <div class="row align-items-center g-3">
-                                <!-- QR Code Box -->
+                                <!-- Dynamic QR Code Box for exact amount -->
                                 <div class="col-sm-5 text-center">
                                     <div class="bg-white p-2 rounded-3 border d-inline-block shadow-xs">
-                                        <img id="modalUpiQrImage" src="<?= !empty($client['upi_qr_code']) ? e($client['upi_qr_code']) : ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode('upi://pay?pa=' . ($client['upi_id'] ?? '7003624933@upi') . '&pn=' . urlencode($client['upi_name'] ?? $client['company_name']) . '&am=' . $startingPrice . '&cu=INR&tn=' . urlencode($event['name']))) ?>" alt="UPI QR" style="width:145px;height:145px;display:block;">
+                                        <img id="modalUpiQrImage" src="<?= !empty($organizerCustomQr) ? e($organizerCustomQr) : ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode('upi://pay?pa=' . $organizerUpiId . '&pn=' . urlencode($organizerUpiName) . '&am=' . $startingPrice . '&cu=INR&tn=' . urlencode($event['name']))) ?>" alt="UPI QR Code" style="width:145px;height:145px;display:block;">
                                     </div>
                                     <div class="text-xs text-muted mt-1 font-monospace" style="font-size:11px;">Scan with Any UPI App</div>
                                 </div>
@@ -1081,13 +1236,13 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                                 <div class="col-sm-7">
                                     <div class="mb-2">
                                         <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Payee Name</span>
-                                        <div class="fw-bold text-dark small"><?= e($client['upi_name'] ?? $client['company_name']) ?></div>
+                                        <div class="fw-bold text-dark small"><?= e($organizerUpiName) ?></div>
                                     </div>
                                     
                                     <div class="mb-2">
-                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">UPI ID / VPA</span>
+                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Receiver UPI ID / VPA</span>
                                         <div class="d-flex align-items-center gap-2 mt-0.5">
-                                            <code class="fw-bold text-dark bg-white px-2 py-1 rounded border small" id="textUpiVpa"><?= e($client['upi_id'] ?? '7003624933@upi') ?></code>
+                                            <code class="fw-bold text-dark bg-white px-2 py-1 rounded border small font-monospace" id="textUpiVpa"><?= e($organizerUpiId) ?></code>
                                             <button type="button" class="btn btn-outline-secondary btn-sm py-0.5 px-2 text-xs" id="btnCopyUpiId" title="Copy UPI ID">
                                                 Copy
                                             </button>
@@ -1103,7 +1258,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 
                             <!-- Mobile Direct Intent Button -->
                             <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
-                                <a id="directUpiAppBtn" href="upi://pay?pa=<?= urlencode($client['upi_id'] ?? '7003624933@upi') ?>&pn=<?= urlencode($client['upi_name'] ?? $client['company_name']) ?>&am=<?= $startingPrice ?>&cu=INR&tn=<?= urlencode($event['name']) ?>" class="btn btn-outline-danger btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 py-2 bg-white">
+                                <a id="directUpiAppBtn" href="upi://pay?pa=<?= urlencode($organizerUpiId) ?>&pn=<?= urlencode($organizerUpiName) ?>&am=<?= $startingPrice ?>&cu=INR&tn=<?= urlencode($event['name']) ?>" class="btn btn-outline-danger btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 py-2 bg-white">
                                     <i data-lucide="smartphone" style="width:15px;height:15px;"></i>
                                     <span>Open UPI App (GPay / PhonePe / Paytm / BHIM)</span>
                                 </a>
@@ -1114,7 +1269,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-dark d-flex align-items-center justify-content-between">
                                 <span>12-Digit UTR / UPI Reference Number <span class="text-danger">*</span></span>
-                                <span class="badge bg-light text-secondary border fw-normal" style="font-size:10.5px;">After payment completion</span>
+                                <span class="badge bg-light text-secondary border fw-normal" style="font-size:10.5px;">From payment receipt</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted font-monospace"><i data-lucide="hash" style="width:14px;height:14px;"></i></span>
@@ -1130,31 +1285,45 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             <i data-lucide="clock" class="text-warning flex-shrink-0" style="width:16px;height:16px;margin-top:2px;"></i>
                             <span style="font-size:12px;"><strong>Verification Notice:</strong> Upon submission, your pass will enter <em>Pending Verification</em> until organizer verifies this UTR on their panel.</span>
                         </div>
-                    </div>
-
-                    <div class="text-muted text-xs text-center mt-3">
-                        <i data-lucide="shield-check" style="width:13px;height:13px;vertical-align:-2px;" class="text-success me-1"></i>
-                        Digital QR Pass will be activated once payment verification is completed.
-                    </div>
-
+                    <?php endif; ?>
                 </div>
 
-                <div class="modal-footer border-top bg-light d-flex justify-content-between align-items-center py-3 px-4">
-                    <div>
-                        <div class="text-xs text-muted">Total Payable</div>
-                        <div class="fw-bolder fs-5 text-danger" id="modalBottomTotalDisplay">₹ <?= number_format($startingPrice) ?></div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2">
-                            <span>Confirm & Book Passes</span>
-                            <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
-                        </button>
-                    </div>
+            </div>
+
+            <!-- Multi-Step Footer Navigation Buttons -->
+            <div class="modal-footer border-top bg-light d-flex justify-content-between align-items-center py-3 px-4">
+                <div>
+                    <div class="text-xs text-muted">Total Payable</div>
+                    <div class="fw-bolder fs-5 text-danger" id="modalBottomTotalDisplay">₹ <?= number_format($startingPrice) ?></div>
                 </div>
 
-            </form>
-        </div>
+                <!-- Footer Buttons: Step 1 -->
+                <div id="footerButtonsStep1" class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="goToStep(2)">
+                        <span>Continue &rarr;</span>
+                    </button>
+                </div>
+
+                <!-- Footer Buttons: Step 2 -->
+                <div id="footerButtonsStep2" class="d-none gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="goToStep(1)">&larr; Back</button>
+                    <button type="button" class="btn btn-danger fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-1.5" id="btnStep2Proceed" onclick="goToStep(3)">
+                        <span>Proceed to Payment &rarr;</span>
+                    </button>
+                </div>
+
+                <!-- Footer Buttons: Step 3 -->
+                <div id="footerButtonsStep3" class="d-none gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="goToStep(2)">&larr; Back</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-1.5" id="btnStep3Submit" <?= (!$hasUpiConfigured && $startingPrice > 0) ? 'disabled title="UPI ID is not configured in backend"' : '' ?>>
+                        <span>Confirm & Book Passes</span>
+                        <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+            </div>
+
+        </form>
     </div>
 </div>
 
@@ -1240,9 +1409,16 @@ if (btnToggleAbout) {
     });
 }
 
-// 3. Ticket Booking Modal Selection & Live Total Calculation
+// 3. Ticket Booking Multi-Step Form Logic & Live Calculations
+let currentStep = 1;
 let currentSelectedPrice = <?= json_encode($startingPrice) ?>;
 let currentSelectedPkgName = 'Pass';
+
+const clientUpiId = <?= json_encode($organizerUpiId) ?>;
+const clientUpiName = <?= json_encode($organizerUpiName) ?>;
+const clientCustomQr = <?= json_encode($organizerCustomQr) ?>;
+const hasUpiConfigured = <?= json_encode($hasUpiConfigured) ?>;
+const currentEventName = <?= json_encode($event['name'] ?? 'Event') ?>;
 
 function selectTicketPackage(id, price, name, cardElem) {
     currentSelectedPrice = parseFloat(price) || 0;
@@ -1267,11 +1443,6 @@ function changePassCount(delta) {
     updateModalTotals();
 }
 
-const clientUpiId = <?= json_encode($client['upi_id'] ?? '7003624933@upi') ?>;
-const clientUpiName = <?= json_encode($client['upi_name'] ?? ($client['company_name'] ?? 'AK Events')) ?>;
-const clientCustomQr = <?= json_encode($client['upi_qr_code'] ?? '') ?>;
-const currentEventName = <?= json_encode($event['name'] ?? 'Event') ?>;
-
 function updateModalTotals() {
     const input = document.getElementById('modalPassCountInput');
     let count = parseInt(input.value);
@@ -1281,46 +1452,149 @@ function updateModalTotals() {
     const total = currentSelectedPrice * count;
     
     const formattedTotal = total > 0 ? ('₹ ' + total.toLocaleString('en-IN')) : 'Free';
+    const summaryText = count + ' × ' + currentSelectedPkgName;
     
-    document.getElementById('modalSelectedPkgName').textContent = count + ' × ' + currentSelectedPkgName;
-    document.getElementById('modalTotalDisplay').textContent = formattedTotal;
-    document.getElementById('modalBottomTotalDisplay').textContent = formattedTotal;
+    const modalSelectedPkg = document.getElementById('modalSelectedPkgName');
+    if (modalSelectedPkg) modalSelectedPkg.textContent = summaryText;
 
-    const upiSection = document.getElementById('modalUpiPaymentSection');
-    const utrInput = document.getElementById('modalUtrInput');
+    const modalTotalDisp = document.getElementById('modalTotalDisplay');
+    if (modalTotalDisp) modalTotalDisp.textContent = formattedTotal;
+
+    const modalBottomDisp = document.getElementById('modalBottomTotalDisplay');
+    if (modalBottomDisp) modalBottomDisp.textContent = formattedTotal;
+
+    const step2Pass = document.getElementById('step2SummaryPass');
+    if (step2Pass) step2Pass.textContent = summaryText;
+
+    const step2Total = document.getElementById('step2SummaryTotal');
+    if (step2Total) step2Total.textContent = formattedTotal;
+
     const upiAmountBox = document.getElementById('upiAmountBox');
-    const qrImg = document.getElementById('modalUpiQrImage');
-    const intentBtn = document.getElementById('directUpiAppBtn');
+    if (upiAmountBox) upiAmountBox.textContent = formattedTotal;
 
-    if (upiSection) {
+    const utrInput = document.getElementById('modalUtrInput');
+    if (utrInput) {
+        utrInput.required = (total > 0 && hasUpiConfigured);
+    }
+
+    const btnStep2Proceed = document.getElementById('btnStep2Proceed');
+    if (btnStep2Proceed) {
         if (total > 0) {
-            upiSection.classList.remove('d-none');
-            if (utrInput) utrInput.required = true;
-            if (upiAmountBox) upiAmountBox.textContent = formattedTotal;
-
-            const upiUri = 'upi://pay?pa=' + encodeURIComponent(clientUpiId) +
-                           '&pn=' + encodeURIComponent(clientUpiName) +
-                           '&am=' + total +
-                           '&cu=INR&tn=' + encodeURIComponent(currentEventName);
-
-            if (intentBtn) {
-                intentBtn.href = upiUri;
-            }
-            if (qrImg) {
-                if (clientCustomQr) {
-                    qrImg.src = clientCustomQr;
-                } else {
-                    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(upiUri);
-                }
-            }
+            btnStep2Proceed.innerHTML = '<span>Proceed to Payment &rarr;</span>';
+            btnStep2Proceed.setAttribute('onclick', 'goToStep(3)');
         } else {
-            upiSection.classList.add('d-none');
-            if (utrInput) {
-                utrInput.required = false;
-                utrInput.value = '';
+            btnStep2Proceed.innerHTML = '<span>Confirm Free Pass &rarr;</span>';
+            btnStep2Proceed.setAttribute('onclick', 'submitBookingForm()');
+        }
+    }
+
+    // Dynamic QR Update if UPI is configured
+    if (hasUpiConfigured && total > 0) {
+        const qrImg = document.getElementById('modalUpiQrImage');
+        const intentBtn = document.getElementById('directUpiAppBtn');
+
+        const upiUri = 'upi://pay?pa=' + encodeURIComponent(clientUpiId) +
+                       '&pn=' + encodeURIComponent(clientUpiName) +
+                       '&am=' + total +
+                       '&cu=INR&tn=' + encodeURIComponent(currentEventName);
+
+        if (intentBtn) {
+            intentBtn.href = upiUri;
+        }
+        if (qrImg) {
+            if (clientCustomQr) {
+                qrImg.src = clientCustomQr;
+            } else {
+                qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(upiUri);
             }
         }
     }
+}
+
+// Multi-Step Form Navigation Controller
+function goToStep(step) {
+    if (step === 2) {
+        // Validate Step 1: Pass count
+        const passCountInput = document.getElementById('modalPassCountInput');
+        const passCount = parseInt(passCountInput.value);
+        if (isNaN(passCount) || passCount < 1) {
+            alert('Please select at least 1 pass.');
+            passCountInput.focus();
+            return;
+        }
+    } else if (step === 3) {
+        // Validate Step 2: Required attendee inputs
+        const step2 = document.getElementById('bookingStep2');
+        const requiredInputs = step2.querySelectorAll('input[required], textarea[required], select[required]');
+        for (let input of requiredInputs) {
+            if (!input.checkValidity()) {
+                input.reportValidity();
+                input.focus();
+                return;
+            }
+        }
+
+        const passCount = parseInt(document.getElementById('modalPassCountInput').value) || 1;
+        const total = currentSelectedPrice * passCount;
+        if (total <= 0) {
+            submitBookingForm();
+            return;
+        }
+    }
+
+    currentStep = step;
+
+    // Toggle Step Panels
+    document.getElementById('bookingStep1').classList.toggle('d-none', step !== 1);
+    document.getElementById('bookingStep2').classList.toggle('d-none', step !== 2);
+    document.getElementById('bookingStep3').classList.toggle('d-none', step !== 3);
+
+    // Toggle Footer Button Groups
+    const f1 = document.getElementById('footerButtonsStep1');
+    const f2 = document.getElementById('footerButtonsStep2');
+    const f3 = document.getElementById('footerButtonsStep3');
+
+    if (f1) { f1.classList.toggle('d-none', step !== 1); f1.classList.toggle('d-flex', step === 1); }
+    if (f2) { f2.classList.toggle('d-none', step !== 2); f2.classList.toggle('d-flex', step === 2); }
+    if (f3) { f3.classList.toggle('d-none', step !== 3); f3.classList.toggle('d-flex', step === 3); }
+
+    // Update Step Indicators
+    for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById('stepInd' + i);
+        const circle = document.getElementById('stepCircle' + i);
+        if (ind && circle) {
+            ind.classList.remove('active', 'completed');
+            if (i === step) {
+                ind.classList.add('active');
+                circle.innerHTML = i;
+            } else if (i < step) {
+                ind.classList.add('completed');
+                circle.innerHTML = '✓';
+            } else {
+                circle.innerHTML = i;
+            }
+        }
+    }
+
+    // Update Progress Fill Line
+    const fill = document.getElementById('stepProgressFill');
+    if (fill) {
+        if (step === 1) fill.style.width = '0%';
+        else if (step === 2) fill.style.width = '50%';
+        else if (step === 3) fill.style.width = '100%';
+    }
+
+    // Scroll modal body smoothly to top
+    const modalBody = document.querySelector('#bookingModal .modal-body');
+    if (modalBody) modalBody.scrollTop = 0;
+
+    // Refresh icons
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function submitBookingForm() {
+    const form = document.getElementById('eventBookingForm');
+    if (form) form.submit();
 }
 
 // Live typing & validation for pass count (allows any number of passes without limit)
@@ -1343,7 +1617,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     const btnCopyUpi = document.getElementById('btnCopyUpiId');
-    if (btnCopyUpi) {
+    if (btnCopyUpi && clientUpiId) {
         btnCopyUpi.addEventListener('click', function() {
             navigator.clipboard.writeText(clientUpiId).then(() => {
                 const originalText = btnCopyUpi.textContent;
@@ -1354,6 +1628,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     btnCopyUpi.classList.replace('btn-success', 'btn-outline-secondary');
                 }, 2000);
             });
+        });
+    }
+
+    // Reset to Step 1 whenever modal opens
+    const bookingModalEl = document.getElementById('bookingModal');
+    if (bookingModalEl) {
+        bookingModalEl.addEventListener('show.bs.modal', function() {
+            goToStep(1);
+            updateModalTotals();
         });
     }
 });
