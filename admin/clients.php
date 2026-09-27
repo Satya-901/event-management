@@ -5,6 +5,7 @@ require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/services/ClientService.php';
 
 $clients = ClientService::getAllClients();
+$flash = getFlash();
 
 // Handle Status Toggle or Deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -13,13 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($_POST['action'] === 'toggle_status') {
             $newStatus = $_POST['status'] ?? 'active';
             ClientService::updateClient($cId, ['status' => $newStatus], $currentUser);
+            setFlash('success', "Client status updated successfully.");
         } elseif ($_POST['action'] === 'delete_client') {
             ClientService::deleteClient($cId, $currentUser);
+            setFlash('success', "Client organization deleted successfully.");
         }
         redirect('/admin/clients');
     }
 }
 ?>
+
+<?php if ($flash): ?>
+    <div class="alert alert-<?= e($flash['type'] === 'error' ? 'danger' : $flash['type']) ?> py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2 shadow-xs">
+        <i data-lucide="<?= $flash['type'] === 'success' ? 'check-circle' : 'alert-circle' ?>" style="width:16px;height:16px;"></i>
+        <span><?= e($flash['message']) ?></span>
+    </div>
+<?php endif; ?>
 
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
     <div>
@@ -53,6 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <td>
                                 <div class="fw-bold text-dark"><?= e($c['name']) ?></div>
                                 <div class="small text-muted"><?= e($c['company_name']) ?></div>
+                                <div class="d-flex align-items-center gap-1 mt-1">
+                                    <?php if (!empty($c['terms_and_conditions'])): ?>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size:10px;" title="Terms & Conditions Configured">
+                                            <i data-lucide="file-text" style="width:10px;height:10px;vertical-align:-1px;"></i> T&C
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($c['cancellation_policy'])): ?>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:10px;" title="Cancellation & Refund Policy Configured">
+                                            <i data-lucide="refresh-cw" style="width:10px;height:10px;vertical-align:-1px;"></i> Refund
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark border font-monospace"><?= e($c['code']) ?></span>
@@ -80,6 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
+                                    <a href="/admin/clients/edit?id=<?= e($c['id']) ?>" class="btn btn-sm btn-outline-primary py-1 px-2.5 text-xs d-inline-flex align-items-center gap-1" title="Edit Company Details & Policies">
+                                        <i data-lucide="edit-3" style="width:13px;height:13px;"></i> Edit
+                                    </a>
                                     <a href="/<?= e($c['slug']) ?>/" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2.5 text-xs d-inline-flex align-items-center gap-1" title="Visit Public URL">
                                         <i data-lucide="globe" style="width:13px;height:13px;"></i> View
                                     </a>

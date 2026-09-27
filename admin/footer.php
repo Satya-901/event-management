@@ -8,7 +8,7 @@
         </div>
         <span class="bottom-nav-label">Overview</span>
     </a>
-    <a href="/admin/clients" class="bottom-nav-item <?= in_array($currentPage, ['clients', 'client_create']) ? 'active' : '' ?>" id="bottomNavTenants">
+    <a href="/admin/clients" class="bottom-nav-item <?= in_array($currentPage, ['clients', 'client_create', 'client_edit']) ? 'active' : '' ?>" id="bottomNavTenants">
         <div class="bottom-nav-icon">
             <i data-lucide="building"></i>
         </div>

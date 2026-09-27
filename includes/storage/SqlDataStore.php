@@ -102,7 +102,9 @@ class SqlDataStore implements DataStore {
             'logo' => $data['logo'] ?? '',
             'status' => $data['status'] ?? 'active',
             'code' => $code,
-            'slug' => $slug
+            'slug' => $slug,
+            'terms_and_conditions' => $data['terms_and_conditions'] ?? '',
+            'cancellation_policy' => $data['cancellation_policy'] ?? ''
         ]);
 
         return $this->getClientById($id);

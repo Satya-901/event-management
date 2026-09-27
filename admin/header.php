@@ -396,7 +396,7 @@ $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
             </a>
         </li>
         <li>
-            <a href="/admin/clients" class="admin-link <?= in_array($currentPage, ['clients', 'client_create']) ? 'active' : '' ?>">
+            <a href="/admin/clients" class="admin-link <?= in_array($currentPage, ['clients', 'client_create', 'client_edit']) ? 'active' : '' ?>">
                 <i data-lucide="building" style="width:18px;height:18px;"></i> Client Tenants
             </a>
         </li>

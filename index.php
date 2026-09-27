@@ -55,6 +55,7 @@ $routes = [
     '/admin/leads' => '/admin/leads.php',
     '/admin/clients' => '/admin/clients.php',
     '/admin/clients/create' => '/admin/client_create.php',
+    '/admin/clients/edit' => '/admin/client_edit.php',
     '/admin/events' => '/admin/events.php',
     '/admin/events/create' => '/admin/event_create.php',
     '/admin/events/edit' => '/admin/event_edit.php',

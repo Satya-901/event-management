@@ -136,6 +136,8 @@ class JsonDataStore implements DataStore {
             'status' => $data['status'] ?? 'active',
             'code' => $code,
             'slug' => $slug,
+            'terms_and_conditions' => $data['terms_and_conditions'] ?? '',
+            'cancellation_policy' => $data['cancellation_policy'] ?? '',
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -158,6 +160,8 @@ class JsonDataStore implements DataStore {
                 if (isset($data['address'])) $c['address'] = $data['address'];
                 if (isset($data['logo'])) $c['logo'] = $data['logo'];
                 if (isset($data['status'])) $c['status'] = $data['status'];
+                if (isset($data['terms_and_conditions'])) $c['terms_and_conditions'] = $data['terms_and_conditions'];
+                if (isset($data['cancellation_policy'])) $c['cancellation_policy'] = $data['cancellation_policy'];
                 if (isset($data['slug']) && !empty($data['slug'])) {
                     $newSlug = slugify($data['slug']);
                     $existing = $this->getClientBySlug($newSlug);

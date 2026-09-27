@@ -546,6 +546,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     <div class="text-center text-muted small mt-2">
                                         <i data-lucide="lock" style="width:12px;height:12px;"></i> Safe & secure booking • Instant entry ticket
                                     </div>
+                                    <?php if (!empty($client['terms_and_conditions']) || !empty($client['cancellation_policy'])): ?>
+                                        <div class="text-center text-muted mt-2" style="font-size:11.5px;">
+                                            By reserving, you agree to <?= e($client['company_name'] ?? $client['name']) ?>'s
+                                            <?php if (!empty($client['terms_and_conditions'])): ?>
+                                                <a href="#publicTermsModal" data-bs-toggle="modal" class="text-danger fw-semibold text-decoration-underline">Terms & Conditions</a>
+                                            <?php endif; ?>
+                                            <?php if (!empty($client['terms_and_conditions']) && !empty($client['cancellation_policy'])): ?> and <?php endif; ?>
+                                            <?php if (!empty($client['cancellation_policy'])): ?>
+                                                <a href="#publicRefundModal" data-bs-toggle="modal" class="text-danger fw-semibold text-decoration-underline">Cancellation Policy</a>
+                                            <?php endif; ?>.
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </form>
@@ -643,9 +655,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         <div class="mb-2">
             <strong><?= e($event['name']) ?></strong> • Presented by <?= e($client['company_name'] ?? $client['name']) ?>
         </div>
+        <?php if (!empty($client['terms_and_conditions']) || !empty($client['cancellation_policy'])): ?>
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-2 small flex-wrap">
+                <?php if (!empty($client['terms_and_conditions'])): ?>
+                    <a href="#publicTermsModal" data-bs-toggle="modal" class="text-secondary text-decoration-none">
+                        <i data-lucide="file-text" style="width:13px;height:13px;vertical-align:-1px;"></i> Terms & Conditions
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($client['terms_and_conditions']) && !empty($client['cancellation_policy'])): ?>
+                    <span class="text-muted">•</span>
+                <?php endif; ?>
+                <?php if (!empty($client['cancellation_policy'])): ?>
+                    <a href="#publicRefundModal" data-bs-toggle="modal" class="text-secondary text-decoration-none">
+                        <i data-lucide="refresh-cw" style="width:13px;height:13px;vertical-align:-1px;"></i> Cancellation & Refund Policy
+                    </a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <p class="mb-0 text-muted" style="font-size:12px;">Powered by <strong><?= e(APP_NAME) ?></strong> — <?= e(APP_TAGLINE) ?></p>
     </div>
 </footer>
+
+<!-- Public Terms & Conditions Modal -->
+<?php if (!empty($client['terms_and_conditions'])): ?>
+<div class="modal fade" id="publicTermsModal" tabindex="-1" aria-labelledby="publicTermsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header border-bottom bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="publicTermsLabel">
+                        <i data-lucide="file-text" class="text-danger" style="width:18px;height:18px;"></i>
+                        Terms & Conditions
+                    </h5>
+                    <div class="text-muted text-xs"><?= e($client['company_name'] ?? $client['name']) ?></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 rich-text-content">
+                <?= renderRichText($client['terms_and_conditions']) ?>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Public Cancellation & Refund Policy Modal -->
+<?php if (!empty($client['cancellation_policy'])): ?>
+<div class="modal fade" id="publicRefundModal" tabindex="-1" aria-labelledby="publicRefundLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header border-bottom bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="publicRefundLabel">
+                        <i data-lucide="refresh-cw" class="text-danger" style="width:18px;height:18px;"></i>
+                        Cancellation & Refund Policy
+                    </h5>
+                    <div class="text-muted text-xs"><?= e($client['company_name'] ?? $client['name']) ?></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 rich-text-content">
+                <?= renderRichText($client['cancellation_policy']) ?>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
