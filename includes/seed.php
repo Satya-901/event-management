@@ -46,6 +46,10 @@ function seedDandiyaEvent(): void {
                 'slug' => 'ak-events',
                 'terms_and_conditions' => '<h3>1. Admission & Entry Policy</h3><p>Every attendee must present a valid digital QR pass at the entrance gate before entry is permitted.</p><h3>2. Dress Code & Conduct</h3><p>Traditional festive attire is encouraged for Garba and Dandiya. Disruptive behavior will result in immediate removal without refund.</p><h3>3. Dandiya Sticks</h3><p>Dandiya sticks are available at designated stalls inside the venue.</p>',
                 'cancellation_policy' => '<h3>1. Non-Refundable Passes</h3><p>All ticket purchases are final. In case of complete organizer cancellation, 100% refund will be processed within 7 business days.</p><h3>2. Ticket Transfers</h3><p>Pass name transfers are allowed up to 24 hours prior to the event.</p>',
+                'upi_id' => '7003624933@upi',
+                'upi_name' => 'AK Events Gorakhpur',
+                'upi_qr_code' => 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode('upi://pay?pa=7003624933@upi&pn=AK%20Events%20Gorakhpur&cu=INR'),
+                'payment_instructions' => 'Scan with Google Pay, PhonePe, Paytm, or BHIM. Enter your 12-digit UTR number below after completing payment.',
                 'status' => 'active'
             ]);
 
@@ -59,6 +63,15 @@ function seedDandiyaEvent(): void {
                 'client_id' => $existingClient['id'],
                 'status' => 'active'
             ]);
+        } else {
+            if (empty($existingClient['upi_id'])) {
+                $store->updateClient($existingClient['id'], [
+                    'upi_id' => '7003624933@upi',
+                    'upi_name' => 'AK Events Gorakhpur',
+                    'upi_qr_code' => 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode('upi://pay?pa=7003624933@upi&pn=AK%20Events%20Gorakhpur&cu=INR'),
+                    'payment_instructions' => 'Scan with Google Pay, PhonePe, Paytm, or BHIM. Enter your 12-digit UTR number below after completing payment.'
+                ]);
+            }
         }
 
         $existingEvent = $store->getEventBySlug($existingClient['id'], 'dandiya-night-2026');

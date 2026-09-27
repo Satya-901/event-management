@@ -16,6 +16,36 @@ $event = $booking ? $store->getEventById($booking['event_id']) : null;
 $client = $booking ? $store->getClientById($booking['client_id']) : null;
 
 $verifyUrl = appUrl('/verify/' . $token);
+
+$isVerified = false;
+$isRejected = false;
+$isPending = false;
+
+if ($booking) {
+    $bStatus = strtolower($booking['status'] ?? '');
+    $pStatus = strtolower($booking['payment_status'] ?? '');
+
+    if (in_array($bStatus, ['confirmed', 'checked_in']) && in_array($pStatus, ['verified', 'free', ''])) {
+        $isVerified = true;
+    } elseif ($bStatus === 'rejected' || $pStatus === 'rejected') {
+        $isRejected = true;
+    } else {
+        $isPending = true;
+    }
+}
+
+// Organizer support phone for WhatsApp
+$organizerPhone = $event['contact_phone'] ?? $client['mobile'] ?? '';
+$organizerWhatsAppUrl = '';
+if ($booking && $event && $organizerPhone) {
+    $organizerWhatsAppUrl = getOrganizerWhatsAppProofUrl($organizerPhone, $booking, $event, $verifyUrl);
+}
+
+// Customer WhatsApp link for confirmed ticket
+$customerWhatsAppUrl = '';
+if ($booking && $event && $isVerified) {
+    $customerWhatsAppUrl = getCustomerWhatsAppTicketUrl($booking, $event, $verifyUrl);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +57,7 @@ $verifyUrl = appUrl('/verify/' . $token);
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --brand-primary: #c2410c;
+            --brand-primary: #ea580c;
             --brand-dark: #7c2d12;
             --brand-light: #fff7ed;
         }
@@ -82,6 +112,19 @@ $verifyUrl = appUrl('/verify/' . $token);
             display: inline-block;
             box-shadow: 0 4px 12px rgba(194, 65, 12, 0.08);
         }
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #f59e0b;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
         @media print {
             body { background: #fff; padding: 0; }
             .no-print { display: none !important; }
@@ -111,7 +154,130 @@ $verifyUrl = appUrl('/verify/' . $token);
                 <a href="/" class="btn btn-outline-secondary">Go to Homepage</a>
             </div>
         </div>
+
+    <?php elseif ($isPending): ?>
+        <!-- ============================================== -->
+        <!-- STATE 1: PAYMENT VERIFICATION PENDING -->
+        <!-- ============================================== -->
+        <div class="ticket-card shadow-sm border">
+            <!-- Header -->
+            <div class="p-4 text-center" style="background: linear-gradient(135deg, #451a03, #9a3412); color:#fff;">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-warning text-dark fw-bold small mb-2 shadow-xs">
+                    <span class="pulse-dot"></span>
+                    <span>Payment Under Verification</span>
+                </div>
+                <h4 class="fw-bold mb-1" style="letter-spacing:-0.5px;"><?= e($event['name']) ?></h4>
+                <p class="mb-0 opacity-90 small font-monospace">Booking #<?= e($booking['booking_number']) ?></p>
+            </div>
+
+            <div class="p-4">
+                <div class="text-center mb-4">
+                    <div class="mx-auto mb-3 d-inline-flex p-3 rounded-circle bg-warning bg-opacity-15 text-warning" style="color:#d97706 !important;">
+                        <i data-lucide="shield-alert" style="width:44px;height:44px;"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Pass Locked: Verification in Progress</h5>
+                    <p class="text-muted small mb-0 px-2" style="line-height:1.5;">
+                        Aapka payment reference receive ho gaya hai. Organizer ya Admin dwara UTR match karke verify karte hi <strong>Official QR Entry Ticket</strong> yahan unlock ho jayega aur aapke email par bhej diya jayega.
+                    </p>
+                </div>
+
+                <!-- Verification Details Card -->
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="row g-2.5 small">
+                        <div class="col-6">
+                            <span class="text-muted d-block text-xs text-uppercase" style="font-size:11px;">Attendee Name</span>
+                            <span class="fw-bold text-dark"><?= e($booking['customer_name']) ?></span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block text-xs text-uppercase" style="font-size:11px;">Passes</span>
+                            <span class="fw-bold text-dark"><?= (int)($booking['pass_count'] ?? 1) ?> Person(s)</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block text-xs text-uppercase" style="font-size:11px;">Amount Payable</span>
+                            <span class="fw-bold text-danger fs-6">₹ <?= number_format((float)($booking['total_amount'] ?? 0)) ?></span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block text-xs text-uppercase" style="font-size:11px;">Payment Mode</span>
+                            <span class="badge bg-light text-dark border font-monospace">UPI</span>
+                        </div>
+                        <div class="col-12 pt-2 border-top">
+                            <span class="text-muted d-block text-xs text-uppercase" style="font-size:11px;">Submitted UTR / Reference No.</span>
+                            <div class="d-flex align-items-center justify-content-between mt-0.5">
+                                <code class="fw-bold text-dark fs-6 bg-white px-2 py-1 rounded border"><?= e($booking['utr_number'] ?: 'Under Review') ?></code>
+                                <span class="badge bg-warning bg-opacity-20 text-dark border border-warning border-opacity-50">Pending Approval</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Auto-Check Poller Status -->
+                <div class="p-2.5 rounded-3 border border-warning border-opacity-30 bg-warning bg-opacity-10 text-center mb-3">
+                    <div class="d-flex align-items-center justify-content-center gap-2 small text-dark fw-semibold">
+                        <span class="spinner-border spinner-border-sm text-warning" role="status"></span>
+                        <span id="pollerStatusText">Checking with Organizer Server... (Auto-refresh active)</span>
+                    </div>
+                </div>
+
+                <!-- Action: WhatsApp Organizer to Fast-Track -->
+                <?php if ($organizerPhone): ?>
+                    <div class="mb-2">
+                        <a href="<?= e($organizerWhatsAppUrl) ?>" target="_blank" class="btn btn-success w-100 fw-semibold d-flex align-items-center justify-content-center gap-2 py-2.5 shadow-sm">
+                            <i data-lucide="message-circle" style="width:18px;height:18px;"></i>
+                            <span>Send Payment Details to Organizer on WhatsApp</span>
+                        </a>
+                        <div class="text-center text-muted text-xs mt-1" style="font-size:11px;">
+                            Click to send your UTR directly to Organizer WhatsApp for instant verification.
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="window.location.reload();">
+                        <i data-lucide="refresh-cw" style="width:14px;height:14px;vertical-align:-2px;"></i> Refresh Status
+                    </button>
+                    <a href="/<?= e($client['slug']) ?>/<?= e($event['slug']) ?>/" class="btn btn-outline-secondary btn-sm w-100">
+                        Event Page
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    <?php elseif ($isRejected): ?>
+        <!-- ============================================== -->
+        <!-- STATE 2: PAYMENT REJECTED -->
+        <!-- ============================================== -->
+        <div class="ticket-card shadow-sm border">
+            <div class="p-4 text-center bg-danger text-white">
+                <div class="d-inline-flex p-3 rounded-circle bg-white text-danger mb-2 shadow-xs">
+                    <i data-lucide="slash" style="width:36px;height:36px;"></i>
+                </div>
+                <h4 class="fw-bold mb-1">Payment Verification Unsuccessful</h4>
+                <p class="mb-0 opacity-90 small">Booking #<?= e($booking['booking_number']) ?></p>
+            </div>
+
+            <div class="p-4 text-center">
+                <p class="text-muted small mb-3">
+                    The payment reference (UTR: <strong><?= e($booking['utr_number'] ?: 'N/A') ?></strong>) submitted for this booking could not be verified by the organizer bank ledger.
+                </p>
+
+                <?php if ($organizerPhone): ?>
+                    <a href="<?= e($organizerWhatsAppUrl) ?>" target="_blank" class="btn btn-success fw-semibold d-inline-flex align-items-center gap-2 px-4 py-2 mb-3">
+                        <i data-lucide="message-circle" style="width:18px;height:18px;"></i> Contact Organizer on WhatsApp
+                    </a>
+                <?php endif; ?>
+
+                <div>
+                    <a href="/<?= e($client['slug']) ?>/<?= e($event['slug']) ?>/" class="btn btn-outline-dark btn-sm">
+                        Re-book or Try Again &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
     <?php else: ?>
+        <!-- ============================================== -->
+        <!-- STATE 3: CONFIRMED & VERIFIED OFFICIAL PASS -->
+        <!-- ============================================== -->
         <div class="ticket-card" id="printablePass">
             <!-- Ticket Header -->
             <div class="ticket-header">
@@ -131,20 +297,14 @@ $verifyUrl = appUrl('/verify/' . $token);
             <div class="px-4 py-2 text-center text-uppercase fw-bold" style="font-size:12px; letter-spacing:1px;
                 <?php if ($booking['status'] === 'checked_in'): ?>
                     background: #dbeafe; color: #1e40af;
-                <?php elseif ($booking['status'] === 'confirmed'): ?>
-                    background: #dcfce7; color: #15803d;
-                <?php elseif ($booking['status'] === 'cancelled' || $booking['status'] === 'rejected'): ?>
-                    background: #fee2e2; color: #991b1b;
                 <?php else: ?>
-                    background: #fef3c7; color: #92400e;
+                    background: #dcfce7; color: #15803d;
                 <?php endif; ?>
             ">
                 <?php if ($booking['status'] === 'checked_in'): ?>
                     <i data-lucide="check-check" style="width:16px;height:16px;vertical-align:-3px;"></i> Attendee Checked In (<?= formatDateTime($booking['checked_in_at']) ?>)
-                <?php elseif ($booking['status'] === 'confirmed'): ?>
-                    <i data-lucide="shield-check" style="width:16px;height:16px;vertical-align:-3px;"></i> Verified Official Pass - Valid for Entry
                 <?php else: ?>
-                    <i data-lucide="alert-circle" style="width:16px;height:16px;vertical-align:-3px;"></i> Status: <?= strtoupper($booking['status']) ?>
+                    <i data-lucide="shield-check" style="width:16px;height:16px;vertical-align:-3px;"></i> Verified Official Pass - Valid for Entry
                 <?php endif; ?>
             </div>
 
@@ -176,7 +336,7 @@ $verifyUrl = appUrl('/verify/' . $token);
 
                 <div class="ticket-divider"></div>
 
-                <!-- QR Code Box -->
+                <!-- QR Code Box (Unlocked) -->
                 <div class="text-center my-2">
                     <div class="qr-box">
                         <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=<?= urlencode($verifyUrl) ?>" alt="Pass QR" style="width:180px;height:180px;display:block;">
@@ -188,6 +348,15 @@ $verifyUrl = appUrl('/verify/' . $token);
                         Token: <?= substr($booking['qr_token'], 0, 16) ?>...
                     </div>
                 </div>
+
+                <!-- WhatsApp Share Ticket Option -->
+                <?php if ($customerWhatsAppUrl): ?>
+                    <div class="mt-3 text-center no-print">
+                        <a href="<?= e($customerWhatsAppUrl) ?>" target="_blank" class="btn btn-outline-success btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 py-2 shadow-xs">
+                            <i data-lucide="message-circle" style="width:16px;height:16px;"></i> Send Ticket to My WhatsApp
+                        </a>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Venue Map Link & Organizer Note -->
                 <div class="bg-light p-3 rounded-3 mt-3 small text-muted">
@@ -226,6 +395,7 @@ $verifyUrl = appUrl('/verify/' . $token);
 <script>
 lucide.createIcons();
 
+// Download pass as image
 const downloadBtn = document.getElementById('downloadPassBtn');
 if (downloadBtn) {
     downloadBtn.addEventListener('click', function() {
@@ -246,6 +416,46 @@ if (downloadBtn) {
         });
     });
 }
+
+// Auto-polling for verification if status is pending
+<?php if ($booking && $isPending): ?>
+(function() {
+    const token = <?= json_encode($token) ?>;
+    let pollCount = 0;
+    const maxPolls = 120; // 10 minutes (every 5 seconds)
+
+    const interval = setInterval(async () => {
+        pollCount++;
+        if (pollCount > maxPolls) {
+            clearInterval(interval);
+            const statusText = document.getElementById('pollerStatusText');
+            if (statusText) statusText.innerText = 'Verification pending. Click Refresh Status button above anytime.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/booking-status?token=' + encodeURIComponent(token));
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data && data.success) {
+                if (data.is_confirmed || data.status === 'confirmed' || data.payment_status === 'verified') {
+                    clearInterval(interval);
+                    const statusText = document.getElementById('pollerStatusText');
+                    if (statusText) statusText.innerHTML = '<span class="text-success fw-bold">✓ Payment Verified! Unlocking pass...</span>';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                } else if (data.status === 'rejected' || data.payment_status === 'rejected') {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }
+        } catch (e) {
+            console.log('Poll check failed', e);
+        }
+    }, 5000);
+})();
+<?php endif; ?>
 </script>
 </body>
 </html>

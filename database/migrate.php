@@ -25,6 +25,10 @@ function runDatabaseMigrations(): array {
             // Clients table columns
             "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `terms_and_conditions` LONGTEXT NULL",
             "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `cancellation_policy` LONGTEXT NULL",
+            "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `upi_id` VARCHAR(191) NULL",
+            "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `upi_name` VARCHAR(191) NULL",
+            "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `upi_qr_code` VARCHAR(500) NULL",
+            "ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `payment_instructions` TEXT NULL",
             
             // Events table columns
             "ALTER TABLE `events` ADD COLUMN IF NOT EXISTS `show_gallery` TINYINT(1) NOT NULL DEFAULT 0",
@@ -35,6 +39,11 @@ function runDatabaseMigrations(): array {
             "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `package_name` VARCHAR(191) NULL",
             "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `package_price` DECIMAL(10,2) NULL DEFAULT 0.00",
             "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `total_amount` DECIMAL(10,2) NULL DEFAULT 0.00",
+            "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `payment_status` VARCHAR(64) NOT NULL DEFAULT 'pending_verification'",
+            "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `utr_number` VARCHAR(100) NULL",
+            "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `payment_method` VARCHAR(64) NULL DEFAULT 'upi'",
+            "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `payment_verified_at` DATETIME NULL",
+            "ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `payment_verified_by` VARCHAR(191) NULL",
         ];
 
         foreach ($migrations as $sql) {

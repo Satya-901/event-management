@@ -83,6 +83,7 @@ $routes = [
     '/api/book-event' => '/api/book-event.php',
     '/api/scan-qr' => '/api/scan-qr.php',
     '/api/check-in' => '/api/check-in.php',
+    '/api/booking-status' => '/api/booking-status.php',
 ];
 
 if (isset($routes[$uri])) {

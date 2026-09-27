@@ -73,6 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $pkgName = $selectedPackage['name'] ?? ($event['price_label'] ?: 'Standard Pass');
             $pkgPrice = (float)($selectedPackage['price'] ?? ($event['price_amount'] ?? 0));
             $totalAmount = $pkgPrice * $passCount;
+            $utrNumber = trim($_POST['utr_number'] ?? '');
+
+            if ($totalAmount > 0 && empty($utrNumber)) {
+                throw new Exception("Please enter your 12-digit UTR / UPI Transaction Reference Number after completing payment.");
+            }
 
             $bookingData = [
                 'event_id' => $event['id'],
@@ -83,7 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'package_id' => $selectedPackage['id'] ?? null,
                 'package_name' => $pkgName,
                 'package_price' => $pkgPrice,
-                'total_amount' => $totalAmount
+                'total_amount' => $totalAmount,
+                'utr_number' => $utrNumber,
+                'payment_method' => 'upi',
+                'payment_status' => ($totalAmount > 0) ? 'pending_verification' : 'free',
+                'status' => ($totalAmount > 0) ? 'pending' : 'confirmed'
             ];
 
             $newBooking = BookingService::createBooking($bookingData, $answers);
@@ -964,9 +973,9 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold text-secondary">Number of Passes</label>
                             <div class="input-group">
-                                <button type="button" class="btn btn-outline-secondary" onclick="changePassCount(-1)">-</button>
-                                <input type="number" name="pass_count" id="modalPassCountInput" class="form-control text-center fw-bold" value="1" min="1" max="10" readonly>
-                                <button type="button" class="btn btn-outline-secondary" onclick="changePassCount(1)">+</button>
+                                <button type="button" class="btn btn-outline-secondary px-3" onclick="changePassCount(-1)">-</button>
+                                <input type="number" name="pass_count" id="modalPassCountInput" class="form-control text-center fw-bold fs-6" value="1" min="1" step="1" placeholder="1">
+                                <button type="button" class="btn btn-outline-secondary px-3" onclick="changePassCount(1)">+</button>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -1018,9 +1027,86 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         <?php endforeach; ?>
                     </div>
 
-                    <div class="text-muted text-xs text-center">
+                    <!-- 3. UPI Scan & Pay Section (Shown when Payable Amount > 0) -->
+                    <div id="modalUpiPaymentSection" class="border-top pt-3 mt-3 <?= ($startingPrice > 0) ? '' : 'd-none' ?>">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center justify-content-between">
+                            <span class="d-flex align-items-center gap-1.5">
+                                <i data-lucide="qr-code" class="text-danger" style="width:16px;height:16px;"></i>
+                                3. Pay via UPI & Enter UTR Number
+                            </span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-xs">
+                                Instant Verification
+                            </span>
+                        </h6>
+
+                        <div class="card p-3 border-danger border-opacity-25 bg-danger bg-opacity-10 rounded-3 mb-3">
+                            <div class="row align-items-center g-3">
+                                <!-- QR Code Box -->
+                                <div class="col-sm-5 text-center">
+                                    <div class="bg-white p-2 rounded-3 border d-inline-block shadow-xs">
+                                        <img id="modalUpiQrImage" src="<?= !empty($client['upi_qr_code']) ? e($client['upi_qr_code']) : ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode('upi://pay?pa=' . ($client['upi_id'] ?? '7003624933@upi') . '&pn=' . urlencode($client['upi_name'] ?? $client['company_name']) . '&am=' . $startingPrice . '&cu=INR&tn=' . urlencode($event['name']))) ?>" alt="UPI QR" style="width:145px;height:145px;display:block;">
+                                    </div>
+                                    <div class="text-xs text-muted mt-1 font-monospace" style="font-size:11px;">Scan with Any UPI App</div>
+                                </div>
+
+                                <!-- UPI Details & Copy -->
+                                <div class="col-sm-7">
+                                    <div class="mb-2">
+                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Payee Name</span>
+                                        <div class="fw-bold text-dark small"><?= e($client['upi_name'] ?? $client['company_name']) ?></div>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">UPI ID / VPA</span>
+                                        <div class="d-flex align-items-center gap-2 mt-0.5">
+                                            <code class="fw-bold text-dark bg-white px-2 py-1 rounded border small" id="textUpiVpa"><?= e($client['upi_id'] ?? '7003624933@upi') ?></code>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0.5 px-2 text-xs" id="btnCopyUpiId" title="Copy UPI ID">
+                                                Copy
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Amount to Pay</span>
+                                        <div class="fw-bolder fs-5 text-danger" id="upiAmountBox">₹ <?= number_format($startingPrice) ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mobile Direct Intent Button -->
+                            <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
+                                <a id="directUpiAppBtn" href="upi://pay?pa=<?= urlencode($client['upi_id'] ?? '7003624933@upi') ?>&pn=<?= urlencode($client['upi_name'] ?? $client['company_name']) ?>&am=<?= $startingPrice ?>&cu=INR&tn=<?= urlencode($event['name']) ?>" class="btn btn-outline-danger btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 py-2 bg-white">
+                                    <i data-lucide="smartphone" style="width:15px;height:15px;"></i>
+                                    <span>Open UPI App (GPay / PhonePe / Paytm / BHIM)</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- UTR / Transaction Reference Input -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark d-flex align-items-center justify-content-between">
+                                <span>12-Digit UTR / UPI Reference Number <span class="text-danger">*</span></span>
+                                <span class="badge bg-light text-secondary border fw-normal" style="font-size:10.5px;">After payment completion</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted font-monospace"><i data-lucide="hash" style="width:14px;height:14px;"></i></span>
+                                <input type="text" name="utr_number" id="modalUtrInput" class="form-control font-monospace" placeholder="e.g. 427819003841" minlength="6" maxlength="30" <?= ($startingPrice > 0) ? 'required' : '' ?>>
+                            </div>
+                            <div class="text-muted text-xs mt-1">
+                                <i data-lucide="info" style="width:12px;height:12px;vertical-align:-1px;"></i>
+                                Open your Google Pay, PhonePe, or Paytm receipt and copy the 12-digit UTR / UPI Reference Number.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning py-2 px-3 small rounded-2 mb-0 d-flex align-items-start gap-2 border-0 bg-warning bg-opacity-10 text-dark">
+                            <i data-lucide="clock" class="text-warning flex-shrink-0" style="width:16px;height:16px;margin-top:2px;"></i>
+                            <span style="font-size:12px;"><strong>Verification Notice:</strong> Upon submission, your pass will enter <em>Pending Verification</em> until organizer verifies this UTR on their panel.</span>
+                        </div>
+                    </div>
+
+                    <div class="text-muted text-xs text-center mt-3">
                         <i data-lucide="shield-check" style="width:13px;height:13px;vertical-align:-2px;" class="text-success me-1"></i>
-                        Instant Verifiable Digital QR Pass will be issued upon completion.
+                        Digital QR Pass will be activated once payment verification is completed.
                     </div>
 
                 </div>
@@ -1149,14 +1235,22 @@ function selectTicketPackage(id, price, name, cardElem) {
 function changePassCount(delta) {
     const input = document.getElementById('modalPassCountInput');
     let val = parseInt(input.value) || 1;
-    val = Math.max(1, Math.min(10, val + delta));
+    val = Math.max(1, val + delta);
     input.value = val;
     updateModalTotals();
 }
 
+const clientUpiId = <?= json_encode($client['upi_id'] ?? '7003624933@upi') ?>;
+const clientUpiName = <?= json_encode($client['upi_name'] ?? ($client['company_name'] ?? 'AK Events')) ?>;
+const clientCustomQr = <?= json_encode($client['upi_qr_code'] ?? '') ?>;
+const currentEventName = <?= json_encode($event['name'] ?? 'Event') ?>;
+
 function updateModalTotals() {
     const input = document.getElementById('modalPassCountInput');
-    const count = parseInt(input.value) || 1;
+    let count = parseInt(input.value);
+    if (isNaN(count) || count < 1) {
+        count = 1;
+    }
     const total = currentSelectedPrice * count;
     
     const formattedTotal = total > 0 ? ('₹ ' + total.toLocaleString('en-IN')) : 'Free';
@@ -1164,7 +1258,78 @@ function updateModalTotals() {
     document.getElementById('modalSelectedPkgName').textContent = count + ' × ' + currentSelectedPkgName;
     document.getElementById('modalTotalDisplay').textContent = formattedTotal;
     document.getElementById('modalBottomTotalDisplay').textContent = formattedTotal;
+
+    const upiSection = document.getElementById('modalUpiPaymentSection');
+    const utrInput = document.getElementById('modalUtrInput');
+    const upiAmountBox = document.getElementById('upiAmountBox');
+    const qrImg = document.getElementById('modalUpiQrImage');
+    const intentBtn = document.getElementById('directUpiAppBtn');
+
+    if (upiSection) {
+        if (total > 0) {
+            upiSection.classList.remove('d-none');
+            if (utrInput) utrInput.required = true;
+            if (upiAmountBox) upiAmountBox.textContent = formattedTotal;
+
+            const upiUri = 'upi://pay?pa=' + encodeURIComponent(clientUpiId) +
+                           '&pn=' + encodeURIComponent(clientUpiName) +
+                           '&am=' + total +
+                           '&cu=INR&tn=' + encodeURIComponent(currentEventName);
+
+            if (intentBtn) {
+                intentBtn.href = upiUri;
+            }
+            if (qrImg) {
+                if (clientCustomQr) {
+                    qrImg.src = clientCustomQr;
+                } else {
+                    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(upiUri);
+                }
+            }
+        } else {
+            upiSection.classList.add('d-none');
+            if (utrInput) {
+                utrInput.required = false;
+                utrInput.value = '';
+            }
+        }
+    }
 }
+
+// Live typing & validation for pass count (allows any number of passes without limit)
+document.addEventListener("DOMContentLoaded", function() {
+    const passInput = document.getElementById('modalPassCountInput');
+    if (passInput) {
+        passInput.addEventListener('input', function() {
+            let val = parseInt(this.value);
+            if (!isNaN(val) && val >= 1) {
+                updateModalTotals();
+            }
+        });
+        passInput.addEventListener('change', function() {
+            let val = parseInt(this.value);
+            if (isNaN(val) || val < 1) {
+                this.value = 1;
+            }
+            updateModalTotals();
+        });
+    }
+
+    const btnCopyUpi = document.getElementById('btnCopyUpiId');
+    if (btnCopyUpi) {
+        btnCopyUpi.addEventListener('click', function() {
+            navigator.clipboard.writeText(clientUpiId).then(() => {
+                const originalText = btnCopyUpi.textContent;
+                btnCopyUpi.textContent = 'Copied!';
+                btnCopyUpi.classList.replace('btn-outline-secondary', 'btn-success');
+                setTimeout(() => {
+                    btnCopyUpi.textContent = originalText;
+                    btnCopyUpi.classList.replace('btn-success', 'btn-outline-secondary');
+                }, 2000);
+            });
+        });
+    }
+});
 
 // 4. Share Event Handler (Native Web Share + Modal Fallback)
 document.getElementById('btnShareCard').addEventListener('click', async function() {

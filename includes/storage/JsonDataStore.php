@@ -138,6 +138,10 @@ class JsonDataStore implements DataStore {
             'slug' => $slug,
             'terms_and_conditions' => $data['terms_and_conditions'] ?? '',
             'cancellation_policy' => $data['cancellation_policy'] ?? '',
+            'upi_id' => $data['upi_id'] ?? '',
+            'upi_name' => $data['upi_name'] ?? '',
+            'upi_qr_code' => $data['upi_qr_code'] ?? '',
+            'payment_instructions' => $data['payment_instructions'] ?? '',
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -494,6 +498,11 @@ class JsonDataStore implements DataStore {
             'package_name' => $bookingData['package_name'] ?? null,
             'package_price' => isset($bookingData['package_price']) ? (float)$bookingData['package_price'] : 0,
             'total_amount' => isset($bookingData['total_amount']) ? (float)$bookingData['total_amount'] : 0,
+            'payment_status' => $bookingData['payment_status'] ?? 'pending_verification',
+            'utr_number' => $bookingData['utr_number'] ?? null,
+            'payment_method' => $bookingData['payment_method'] ?? 'upi',
+            'payment_verified_at' => $bookingData['payment_verified_at'] ?? null,
+            'payment_verified_by' => $bookingData['payment_verified_by'] ?? null,
             'booking_date' => $bookingData['booking_date'] ?? date('Y-m-d'),
             'status' => $bookingData['status'] ?? 'confirmed', // pending, confirmed, cancelled, rejected, checked_in, expired
             'qr_token' => $qrToken,

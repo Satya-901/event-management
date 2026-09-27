@@ -217,6 +217,69 @@ function statusBadge(string $status): string {
     return getStatusBadge($status);
 }
 
+function paymentStatusBadge(?string $status): string {
+    $s = strtolower($status ?? 'pending_verification');
+    if ($s === 'verified') {
+        return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-inline-flex align-items-center gap-1 fw-semibold"><i data-lucide="check-circle" style="width:12px;height:12px;"></i> Verified</span>';
+    } elseif ($s === 'pending_verification') {
+        return '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50 d-inline-flex align-items-center gap-1 fw-semibold"><i data-lucide="clock" style="width:12px;height:12px;" class="text-warning"></i> Pending Verification</span>';
+    } elseif ($s === 'rejected') {
+        return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 d-inline-flex align-items-center gap-1 fw-semibold"><i data-lucide="x-circle" style="width:12px;height:12px;"></i> Rejected</span>';
+    } elseif ($s === 'free') {
+        return '<span class="badge bg-light text-secondary border d-inline-flex align-items-center gap-1"><i data-lucide="gift" style="width:12px;height:12px;"></i> Free</span>';
+    }
+    return '<span class="badge bg-secondary d-inline-flex align-items-center gap-1">' . e(ucfirst($s)) . '</span>';
+}
+
+function cleanPhoneNumber(?string $phone): string {
+    if (!$phone) return '';
+    $clean = preg_replace('/[^0-9]/', '', $phone);
+    if (strlen($clean) === 10) {
+        $clean = '91' . $clean;
+    }
+    return $clean;
+}
+
+function getCustomerWhatsAppTicketUrl(array $booking, array $event, string $verifyUrl): string {
+    $phone = cleanPhoneNumber($booking['phone'] ?? '');
+    $customerName = $booking['customer_name'] ?? 'Attendee';
+    $eventName = $event['name'] ?? 'Event';
+    $bookingNo = $booking['booking_number'] ?? '';
+    $passes = (int)($booking['pass_count'] ?? 1);
+    
+    $text = "🎉 *Booking Confirmed!* 🎉\n\n"
+          . "Dear {$customerName},\n"
+          . "Your booking *#{$bookingNo}* ({$passes} Pass" . ($passes > 1 ? 'es' : '') . ") for *{$eventName}* has been successfully verified & confirmed! ✅\n\n"
+          . "🎟️ *Your Official QR Pass / E-Ticket:* \n{$verifyUrl}\n\n"
+          . "Please show this digital pass at the entrance gate for quick QR scan & entry.\n\n"
+          . "See you at the event! 🎊";
+
+    return 'https://api.whatsapp.com/send?phone=' . $phone . '&text=' . rawurlencode($text);
+}
+
+function getOrganizerWhatsAppProofUrl(string $organizerPhone, array $booking, array $event, string $verifyUrl): string {
+    $phone = cleanPhoneNumber($organizerPhone);
+    $customerName = $booking['customer_name'] ?? 'Attendee';
+    $eventName = $event['name'] ?? 'Event';
+    $bookingNo = $booking['booking_number'] ?? '';
+    $amount = number_format((float)($booking['total_amount'] ?? 0));
+    $utr = $booking['utr_number'] ?? 'N/A';
+    $passes = (int)($booking['pass_count'] ?? 1);
+
+    $text = "📢 *New Ticket Payment Submitted*\n\n"
+          . "Hello Organizer, I have completed the UPI payment for my tickets:\n"
+          . "• *Event:* {$eventName}\n"
+          . "• *Booking #:* #{$bookingNo}\n"
+          . "• *Attendee:* {$customerName}\n"
+          . "• *Passes:* {$passes} Pass" . ($passes > 1 ? 'es' : '') . "\n"
+          . "• *Amount Paid:* ₹{$amount}\n"
+          . "• *UTR / Ref No:* {$utr}\n\n"
+          . "🔗 *Check Pass Link:* {$verifyUrl}\n\n"
+          . "Please verify my payment in your organizer portal and approve the pass. Thank you!";
+
+    return 'https://api.whatsapp.com/send?phone=' . $phone . '&text=' . rawurlencode($text);
+}
+
 // Safe File Upload Helper
 function handleFileUpload(array $file, string $targetSubDir, array $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'svg'], int $maxBytes = 5242880): array {
     if (!isset($file['error']) || is_array($file['error'])) {

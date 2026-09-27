@@ -35,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "Your organizer space is inactive or suspended. Please contact platform support.";
                 } else {
                     loginUser($user);
+                    require_once __DIR__ . '/../includes/services/BookingService.php';
+                    $pending = BookingService::getPendingPaymentsCount($client['id']);
+                    if ($pending > 0) {
+                        setFlash('warning', "🔔 Payment Alert: You have {$pending} ticket payment(s) awaiting verification! Please review under All Bookings.");
+                    }
                     redirect('/client/dashboard');
                 }
             } else {

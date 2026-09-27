@@ -35,10 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'mobile' => $mobile,
                 'address' => $address,
                 'terms_and_conditions' => $terms,
-                'cancellation_policy' => $refund
+                'cancellation_policy' => $refund,
+                'upi_id' => trim($_POST['upi_id'] ?? ''),
+                'upi_name' => trim($_POST['upi_name'] ?? ''),
+                'upi_qr_code' => trim($_POST['upi_qr_code'] ?? ''),
+                'payment_instructions' => trim($_POST['payment_instructions'] ?? '')
             ], $currentUser);
 
-            $success = "Organizer profile, Terms & Conditions, and Cancellation Policy updated successfully!";
+            $success = "Organizer profile, payment UPI receiver, Terms & Conditions, and Cancellation Policy updated successfully!";
             $currentClient = ClientService::getClient($clientId);
             $currentTerms = $currentClient['terms_and_conditions'] ?? '';
             $currentRefund = $currentClient['cancellation_policy'] ?? '';
@@ -140,6 +144,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-12">
                     <label class="form-label small fw-semibold text-secondary">Registered Physical Address</label>
                     <textarea name="address" class="form-control" rows="2"><?= e($currentClient['address']) ?></textarea>
+                </div>
+
+                <!-- UPI Payment Configuration Section -->
+                <div class="col-12 border-top pt-3 mt-3">
+                    <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                        <i data-lucide="qr-code" class="text-danger" style="width:18px;height:18px;"></i>
+                        UPI Payment Collection & QR Code Setup
+                    </h6>
+                    <p class="text-muted text-xs mb-3" style="font-size:12px;">Ticket buyers will scan this QR code or pay to this UPI ID. You will review their submitted 12-digit UTR before tickets are confirmed.</p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">Receiver UPI ID / VPA</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted"><i data-lucide="smartphone" style="width:14px;height:14px;"></i></span>
+                        <input type="text" name="upi_id" class="form-control font-monospace" placeholder="e.g. business@upi or 9876543210@paytm" value="<?= e($currentClient['upi_id'] ?? '') ?>">
+                    </div>
+                    <div class="form-text text-xs">Direct UPI VPA for ticket payments.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">Payee / Account Holder Name</label>
+                    <input type="text" name="upi_name" class="form-control" placeholder="e.g. AK Events & Entertainment" value="<?= e($currentClient['upi_name'] ?? '') ?>">
+                    <div class="form-text text-xs">Name displayed to attendee in UPI apps.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">Custom UPI QR Code Image URL (Optional)</label>
+                    <input type="url" name="upi_qr_code" class="form-control" placeholder="https://example.com/my-qr.png" value="<?= e($currentClient['upi_qr_code'] ?? '') ?>">
+                    <div class="form-text text-xs">Leave blank to auto-generate dynamic QR for exact payable amounts.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-secondary">Attendee Payment Instructions</label>
+                    <input type="text" name="payment_instructions" class="form-control" placeholder="e.g. Scan QR, complete payment, and paste 12-digit UTR" value="<?= e($currentClient['payment_instructions'] ?? 'Scan QR, pay the exact amount, and enter the 12-digit UTR number.') ?>">
                 </div>
 
                 <!-- Terms & Conditions and Cancellation/Refund Policy Section -->

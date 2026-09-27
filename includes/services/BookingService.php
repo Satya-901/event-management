@@ -14,7 +14,12 @@ class BookingService {
         // Apply filters if provided
         if (!empty($filters['status'])) {
             $status = strtolower($filters['status']);
-            $bookings = array_filter($bookings, fn($b) => strtolower($b['status']) === $status);
+            $bookings = array_filter($bookings, fn($b) => strtolower($b['status'] ?? '') === $status);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $pStatus = strtolower($filters['payment_status']);
+            $bookings = array_filter($bookings, fn($b) => strtolower($b['payment_status'] ?? '') === $pStatus);
         }
 
         if (!empty($filters['search'])) {
@@ -84,6 +89,16 @@ class BookingService {
             throw new Exception("Only {$event['available_seats']} passes remaining.");
         }
 
+        $totalAmount = isset($data['total_amount']) ? (float)$data['total_amount'] : 0;
+        $utrNumber = trim($data['utr_number'] ?? '');
+        $paymentMethod = $data['payment_method'] ?? 'upi';
+
+        // Payment status resolution:
+        // If event requires payment (totalAmount > 0), booking starts in pending status awaiting verification!
+        $isPaidEvent = ($totalAmount > 0);
+        $initialStatus = $isPaidEvent ? 'pending' : (($event['confirmation_mode'] === 'manual') ? 'pending' : 'confirmed');
+        $initialPaymentStatus = $isPaidEvent ? 'pending_verification' : 'free';
+
         $bookingData = [
             'client_id' => $event['client_id'],
             'event_id' => $event['id'],
@@ -95,9 +110,12 @@ class BookingService {
             'package_id' => $data['package_id'] ?? null,
             'package_name' => $data['package_name'] ?? null,
             'package_price' => isset($data['package_price']) ? (float)$data['package_price'] : 0,
-            'total_amount' => isset($data['total_amount']) ? (float)$data['total_amount'] : 0,
+            'total_amount' => $totalAmount,
+            'payment_status' => $data['payment_status'] ?? $initialPaymentStatus,
+            'utr_number' => $utrNumber ?: null,
+            'payment_method' => $paymentMethod,
             'booking_date' => date('Y-m-d'),
-            'status' => ($event['confirmation_mode'] === 'manual') ? 'pending' : 'confirmed',
+            'status' => $data['status'] ?? $initialStatus,
             'qr_token' => generateSecureQrToken()
         ];
 
@@ -111,17 +129,103 @@ class BookingService {
             'action' => 'booking_created',
             'entity_type' => 'booking',
             'entity_id' => $booking['id'],
-            'description' => "New booking #{$booking['booking_number']} by {$booking['customer_name']} for {$event['name']}"
+            'description' => "New booking #{$booking['booking_number']} by {$booking['customer_name']} (UTR: " . ($utrNumber ?: 'N/A') . ") for {$event['name']}"
         ]);
 
-        // Trigger confirmation email via MailService (asynchronous or non-blocking)
-        try {
-            MailService::sendBookingConfirmation($booking, $event);
-        } catch (Exception $e) {
-            error_log("Email sending error: " . $e->getMessage());
+        // If free booking and confirmed, send email confirmation immediately
+        if ($booking['status'] === 'confirmed' && !empty($booking['email'])) {
+            try {
+                MailService::sendBookingConfirmation($booking, $event);
+            } catch (Exception $e) {
+                error_log("Email sending error: " . $e->getMessage());
+            }
         }
 
         return $booking;
+    }
+
+    public static function getPendingPaymentsCount(?string $clientId = null): int {
+        $bookings = getDataStore()->getBookings($clientId, null);
+        $count = 0;
+        foreach ($bookings as $b) {
+            $pStatus = strtolower($b['payment_status'] ?? '');
+            $bStatus = strtolower($b['status'] ?? '');
+            if ($pStatus === 'pending_verification' && $bStatus !== 'cancelled' && $bStatus !== 'rejected') {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    public static function verifyPayment(string $id, ?string $clientId = null, ?array $actor = null): bool {
+        $booking = self::getBooking($id, $clientId);
+        if (!$booking) return false;
+
+        $store = getDataStore();
+        $actorName = $actor['name'] ?? $actor['username'] ?? 'Organizer Admin';
+
+        $updated = $store->updateBooking($id, [
+            'status' => 'confirmed',
+            'payment_status' => 'verified',
+            'payment_verified_at' => date('Y-m-d H:i:s'),
+            'payment_verified_by' => $actorName
+        ]);
+
+        if ($updated) {
+            $store->logActivity([
+                'actor_id' => $actor['id'] ?? 'system',
+                'actor_role' => $actor['role'] ?? 'admin',
+                'client_id' => $booking['client_id'],
+                'action' => "payment_verified",
+                'entity_type' => 'booking',
+                'entity_id' => $id,
+                'description' => "Payment verified & ticket approved for booking #{$booking['booking_number']} (UTR: {$booking['utr_number']}) by {$actorName}"
+            ]);
+
+            // Dispatch confirmation email to customer
+            if (!empty($booking['email'])) {
+                try {
+                    $event = $store->getEventById($booking['event_id']);
+                    if ($event) {
+                        $refreshedBooking = self::getBooking($id, $clientId);
+                        MailService::sendBookingConfirmation($refreshedBooking ?: $booking, $event);
+                    }
+                } catch (Exception $e) {
+                    error_log("Verification email error: " . $e->getMessage());
+                }
+            }
+        }
+
+        return $updated;
+    }
+
+    public static function rejectPayment(string $id, ?string $reason = null, ?string $clientId = null, ?array $actor = null): bool {
+        $booking = self::getBooking($id, $clientId);
+        if (!$booking) return false;
+
+        $store = getDataStore();
+        $actorName = $actor['name'] ?? $actor['username'] ?? 'Organizer Admin';
+
+        $updated = $store->updateBooking($id, [
+            'status' => 'rejected',
+            'payment_status' => 'rejected',
+            'payment_verified_at' => date('Y-m-d H:i:s'),
+            'payment_verified_by' => $actorName
+        ]);
+
+        if ($updated) {
+            $store->logActivity([
+                'actor_id' => $actor['id'] ?? 'system',
+                'actor_role' => $actor['role'] ?? 'admin',
+                'client_id' => $booking['client_id'],
+                'action' => "payment_rejected",
+                'entity_type' => 'booking',
+                'entity_id' => $id,
+                'description' => "Payment rejected for booking #{$booking['booking_number']}" . ($reason ? " Reason: {$reason}" : "")
+            ]);
+        }
+
+        return $updated;
     }
 
     public static function updateStatus(string $id, string $status, ?string $clientId = null, ?array $actor = null): bool {

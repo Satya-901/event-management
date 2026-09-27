@@ -45,10 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'address' => $address,
                 'status' => $status,
                 'terms_and_conditions' => $terms,
-                'cancellation_policy' => $refund
+                'cancellation_policy' => $refund,
+                'upi_id' => trim($_POST['upi_id'] ?? ''),
+                'upi_name' => trim($_POST['upi_name'] ?? ''),
+                'upi_qr_code' => trim($_POST['upi_qr_code'] ?? ''),
+                'payment_instructions' => trim($_POST['payment_instructions'] ?? '')
             ], $currentUser);
 
-            $success = "Organization details, Terms & Conditions, and Cancellation Policy updated successfully!";
+            $success = "Organization details, payment UPI setup, Terms & Conditions, and Cancellation Policy updated successfully!";
             $client = ClientService::getClient($clientId);
             $currentTerms = $client['terms_and_conditions'] ?? '';
             $currentRefund = $client['cancellation_policy'] ?? '';
@@ -129,12 +133,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- 2. Terms & Conditions and Cancellation/Refund Policy Section (CKEditor Popups) -->
+    <!-- 2. UPI Payment Collection & QR Code -->
+    <div class="border-bottom pb-2 mb-3">
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color:#0f172a;">
+            <i data-lucide="qr-code" class="text-primary" style="width:18px;height:18px;"></i> 2. UPI Payment & QR Code Setup
+        </h5>
+        <p class="text-muted text-xs mb-0 mt-0.5" style="font-size:12px;">Attendees will scan this QR code or pay to this UPI ID. You will verify their 12-digit UTR before tickets are unlocked.</p>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label class="form-label small fw-medium text-secondary">Receiver UPI ID / VPA</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i data-lucide="smartphone" style="width:14px;height:14px;"></i></span>
+                <input type="text" name="upi_id" class="form-control font-monospace" placeholder="e.g. business@upi or 9876543210@paytm" value="<?= e($client['upi_id'] ?? '') ?>">
+            </div>
+            <div class="form-text text-xs">Attendees will send ticket payment directly to this UPI address.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small fw-medium text-secondary">Payee / Account Name</label>
+            <input type="text" name="upi_name" class="form-control" placeholder="e.g. AK Events & Entertainment Pvt Ltd" value="<?= e($client['upi_name'] ?? '') ?>">
+            <div class="form-text text-xs">Official name registered on bank or UPI app.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small fw-medium text-secondary">Custom UPI QR Code Image URL (Optional)</label>
+            <input type="url" name="upi_qr_code" class="form-control" placeholder="https://example.com/qr-code.png" value="<?= e($client['upi_qr_code'] ?? '') ?>">
+            <div class="form-text text-xs">Leave blank to automatically generate dynamic UPI QR with exact amount.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small fw-medium text-secondary">Payment Instructions for Attendees</label>
+            <input type="text" name="payment_instructions" class="form-control" placeholder="e.g. Scan with GPay/PhonePe & enter UTR" value="<?= e($client['payment_instructions'] ?? 'Scan QR, pay the exact amount, and enter the 12-digit UTR number.') ?>">
+        </div>
+    </div>
+
+    <!-- 3. Terms & Conditions and Cancellation/Refund Policy Section (CKEditor Popups) -->
     <div class="border-bottom pb-2 mb-3">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
             <div>
                 <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color:#0f172a;">
-                    <i data-lucide="shield-check" class="text-primary" style="width:18px;height:18px;"></i> 2. Terms & Conditions & Cancellation/Refund Policy
+                    <i data-lucide="shield-check" class="text-primary" style="width:18px;height:18px;"></i> 3. Terms & Conditions & Cancellation/Refund Policy
                 </h5>
                 <p class="text-muted text-xs mb-0 mt-0.5" style="font-size:12px;">Manage organizational terms and refund rules using rich-text popup editors powered by CKEditor.</p>
             </div>

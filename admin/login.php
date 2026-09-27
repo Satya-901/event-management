@@ -33,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = getDataStore()->getUserByUsername($username);
             if ($user && ($user['role'] ?? '') === 'super_admin' && verifyPassword($password, $user['password'])) {
                 loginUser($user);
+                require_once __DIR__ . '/../includes/services/BookingService.php';
+                $pending = BookingService::getPendingPaymentsCount(null);
+                if ($pending > 0) {
+                    setFlash('warning', "🔔 Payment Alert: You have {$pending} payment(s) awaiting verification! Please verify under All Bookings.");
+                }
                 redirect('/admin/dashboard');
             } else {
                 $error = "Invalid Super Admin credentials. Please verify your credentials.";

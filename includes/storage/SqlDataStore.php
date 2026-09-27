@@ -81,12 +81,23 @@ class SqlDataStore implements DataStore {
                 // Table already exists - verify and auto-add missing columns
                 $this->ensureColumn('clients', 'terms_and_conditions', "LONGTEXT NULL");
                 $this->ensureColumn('clients', 'cancellation_policy', "LONGTEXT NULL");
+                $this->ensureColumn('clients', 'upi_id', "VARCHAR(191) NULL");
+                $this->ensureColumn('clients', 'upi_name', "VARCHAR(191) NULL");
+                $this->ensureColumn('clients', 'upi_qr_code', "VARCHAR(500) NULL");
+                $this->ensureColumn('clients', 'payment_instructions', "TEXT NULL");
+
                 $this->ensureColumn('events', 'show_gallery', "TINYINT(1) NOT NULL DEFAULT 0");
                 $this->ensureColumn('events', 'packages', "JSON NULL");
+
                 $this->ensureColumn('bookings', 'package_id', "VARCHAR(64) NULL");
                 $this->ensureColumn('bookings', 'package_name', "VARCHAR(191) NULL");
                 $this->ensureColumn('bookings', 'package_price', "DECIMAL(10,2) NULL DEFAULT 0.00");
                 $this->ensureColumn('bookings', 'total_amount', "DECIMAL(10,2) NULL DEFAULT 0.00");
+                $this->ensureColumn('bookings', 'payment_status', "VARCHAR(64) NOT NULL DEFAULT 'pending_verification'");
+                $this->ensureColumn('bookings', 'utr_number', "VARCHAR(100) NULL");
+                $this->ensureColumn('bookings', 'payment_method', "VARCHAR(64) NULL DEFAULT 'upi'");
+                $this->ensureColumn('bookings', 'payment_verified_at', "DATETIME NULL");
+                $this->ensureColumn('bookings', 'payment_verified_by', "VARCHAR(191) NULL");
             }
         } catch (Throwable $t) {
             error_log("Schema auto-provision notice: " . $t->getMessage());
@@ -126,6 +137,10 @@ class SqlDataStore implements DataStore {
 
         $this->ensureColumn('clients', 'terms_and_conditions', "LONGTEXT NULL");
         $this->ensureColumn('clients', 'cancellation_policy', "LONGTEXT NULL");
+        $this->ensureColumn('clients', 'upi_id', "VARCHAR(191) NULL");
+        $this->ensureColumn('clients', 'upi_name', "VARCHAR(191) NULL");
+        $this->ensureColumn('clients', 'upi_qr_code', "VARCHAR(500) NULL");
+        $this->ensureColumn('clients', 'payment_instructions', "TEXT NULL");
 
         $payload = [
             'id' => $id,
@@ -139,7 +154,11 @@ class SqlDataStore implements DataStore {
             'code' => $code,
             'slug' => $slug,
             'terms_and_conditions' => $data['terms_and_conditions'] ?? '',
-            'cancellation_policy' => $data['cancellation_policy'] ?? ''
+            'cancellation_policy' => $data['cancellation_policy'] ?? '',
+            'upi_id' => $data['upi_id'] ?? '',
+            'upi_name' => $data['upi_name'] ?? '',
+            'upi_qr_code' => $data['upi_qr_code'] ?? '',
+            'payment_instructions' => $data['payment_instructions'] ?? ''
         ];
 
         $validCols = $this->getTableColumns('clients');
@@ -180,8 +199,20 @@ class SqlDataStore implements DataStore {
             if ($key === 'id') continue;
             // Check if column exists, or attempt auto-migration
             if (!empty($validCols) && !in_array(strtolower($key), $validCols, true)) {
-                if ($key === 'terms_and_conditions' || $key === 'cancellation_policy') {
+                if (in_array($key, ['terms_and_conditions', 'cancellation_policy', 'payment_instructions'], true)) {
                     $this->ensureColumn('clients', $key, "LONGTEXT NULL");
+                    $validCols = $this->getTableColumns('clients');
+                    if (!in_array(strtolower($key), $validCols, true)) {
+                        continue;
+                    }
+                } elseif (in_array($key, ['upi_id', 'upi_name'], true)) {
+                    $this->ensureColumn('clients', $key, "VARCHAR(191) NULL");
+                    $validCols = $this->getTableColumns('clients');
+                    if (!in_array(strtolower($key), $validCols, true)) {
+                        continue;
+                    }
+                } elseif ($key === 'upi_qr_code') {
+                    $this->ensureColumn('clients', $key, "VARCHAR(500) NULL");
                     $validCols = $this->getTableColumns('clients');
                     if (!in_array(strtolower($key), $validCols, true)) {
                         continue;
@@ -523,6 +554,11 @@ class SqlDataStore implements DataStore {
         $this->ensureColumn('bookings', 'package_name', "VARCHAR(191) NULL");
         $this->ensureColumn('bookings', 'package_price', "DECIMAL(10,2) NULL DEFAULT 0.00");
         $this->ensureColumn('bookings', 'total_amount', "DECIMAL(10,2) NULL DEFAULT 0.00");
+        $this->ensureColumn('bookings', 'payment_status', "VARCHAR(64) NOT NULL DEFAULT 'pending_verification'");
+        $this->ensureColumn('bookings', 'utr_number', "VARCHAR(100) NULL");
+        $this->ensureColumn('bookings', 'payment_method', "VARCHAR(64) NULL DEFAULT 'upi'");
+        $this->ensureColumn('bookings', 'payment_verified_at', "DATETIME NULL");
+        $this->ensureColumn('bookings', 'payment_verified_by', "VARCHAR(191) NULL");
 
         $payload = [
             'id' => $id,
@@ -537,6 +573,11 @@ class SqlDataStore implements DataStore {
             'package_name' => $bookingData['package_name'] ?? null,
             'package_price' => isset($bookingData['package_price']) ? (float)$bookingData['package_price'] : 0.00,
             'total_amount' => isset($bookingData['total_amount']) ? (float)$bookingData['total_amount'] : 0.00,
+            'payment_status' => $bookingData['payment_status'] ?? 'pending_verification',
+            'utr_number' => $bookingData['utr_number'] ?? null,
+            'payment_method' => $bookingData['payment_method'] ?? 'upi',
+            'payment_verified_at' => $bookingData['payment_verified_at'] ?? null,
+            'payment_verified_by' => $bookingData['payment_verified_by'] ?? null,
             'booking_date' => $bookingData['booking_date'] ?? date('Y-m-d'),
             'status' => $bookingData['status'] ?? 'confirmed',
             'qr_token' => $qrToken,
@@ -591,7 +632,21 @@ class SqlDataStore implements DataStore {
         foreach ($data as $k => $v) {
             if ($k === 'id') continue;
             if (!empty($validCols) && !in_array(strtolower($k), $validCols, true)) {
-                continue;
+                if (in_array($k, ['payment_status', 'utr_number', 'payment_method'], true)) {
+                    $this->ensureColumn('bookings', $k, "VARCHAR(191) NULL");
+                    $validCols = $this->getTableColumns('bookings');
+                    if (!in_array(strtolower($k), $validCols, true)) continue;
+                } elseif (in_array($k, ['payment_verified_at'], true)) {
+                    $this->ensureColumn('bookings', $k, "DATETIME NULL");
+                    $validCols = $this->getTableColumns('bookings');
+                    if (!in_array(strtolower($k), $validCols, true)) continue;
+                } elseif (in_array($k, ['payment_verified_by'], true)) {
+                    $this->ensureColumn('bookings', $k, "VARCHAR(191) NULL");
+                    $validCols = $this->getTableColumns('bookings');
+                    if (!in_array(strtolower($k), $validCols, true)) continue;
+                } else {
+                    continue;
+                }
             }
             $fields[] = "`{$k}` = :{$k}";
             $params[$k] = $v;

@@ -8,11 +8,13 @@ require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/storage/DataStoreFactory.php';
 require_once __DIR__ . '/../includes/services/LeadService.php';
+require_once __DIR__ . '/../includes/services/BookingService.php';
 
 requireSuperAdmin();
 $currentUser = getCurrentUser();
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
+$pendingPaymentsCount = BookingService::getPendingPaymentsCount(null);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -407,7 +409,11 @@ $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
         </li>
         <li>
             <a href="/admin/bookings" class="admin-link <?= $currentPage === 'bookings' ? 'active' : '' ?>">
-                <i data-lucide="ticket" style="width:18px;height:18px;"></i> All Bookings
+                <i data-lucide="ticket" style="width:18px;height:18px;"></i>
+                <span class="flex-grow-1">All Bookings</span>
+                <?php if (!empty($pendingPaymentsCount)): ?>
+                    <span class="badge bg-danger rounded-pill px-2 py-0.5 text-white" style="font-size:10px;"><?= $pendingPaymentsCount ?> Verify</span>
+                <?php endif; ?>
             </a>
         </li>
         <li>
@@ -460,3 +466,15 @@ $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
             </a>
         </div>
     </div>
+
+    <?php if ($pendingPaymentsCount > 0 && $currentPage !== 'bookings'): ?>
+        <div class="alert alert-warning py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between shadow-xs border border-warning border-opacity-50">
+            <div class="d-flex align-items-center gap-2 small">
+                <span class="badge bg-danger text-white rounded-pill px-2 py-0.5">🔔 Payment Alert</span>
+                <span class="text-dark fw-semibold">You have <strong><?= $pendingPaymentsCount ?></strong> ticket payment(s) awaiting verification!</span>
+            </div>
+            <a href="/admin/bookings?payment_status=pending_verification" class="btn btn-warning btn-sm py-1 px-2.5 text-xs fw-bold text-dark shadow-xs text-nowrap">
+                Verify Now &rarr;
+            </a>
+        </div>
+    <?php endif; ?>
