@@ -45,7 +45,7 @@ function startPhpServer() {
   });
 
   phpProcess.stderr?.on('data', (data) => {
-    process.stderr.write(`[PHP] ${data}`);
+    process.stdout.write(`[PHP] ${data}`);
   });
 
   phpProcess.on('error', (err) => {

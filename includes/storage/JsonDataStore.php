@@ -347,6 +347,7 @@ class JsonDataStore implements DataStore {
             'confirmation_mode' => $data['confirmation_mode'] ?? 'instant', // 'instant', 'manual'
             'price_label' => $data['price_label'] ?? 'Free Registration',
             'price_amount' => (float)($data['price_amount'] ?? 0),
+            'packages' => is_array($data['packages'] ?? null) ? $data['packages'] : [],
             'contact_email' => $data['contact_email'] ?? '',
             'contact_phone' => $data['contact_phone'] ?? '',
             'contact_whatsapp' => $data['contact_whatsapp'] ?? '',
@@ -484,6 +485,10 @@ class JsonDataStore implements DataStore {
             'email' => $bookingData['email'] ?? '',
             'phone' => $bookingData['phone'] ?? '',
             'pass_count' => (int)($bookingData['pass_count'] ?? 1),
+            'package_id' => $bookingData['package_id'] ?? null,
+            'package_name' => $bookingData['package_name'] ?? null,
+            'package_price' => isset($bookingData['package_price']) ? (float)$bookingData['package_price'] : 0,
+            'total_amount' => isset($bookingData['total_amount']) ? (float)$bookingData['total_amount'] : 0,
             'booking_date' => $bookingData['booking_date'] ?? date('Y-m-d'),
             'status' => $bookingData['status'] ?? 'confirmed', // pending, confirmed, cancelled, rejected, checked_in, expired
             'qr_token' => $qrToken,

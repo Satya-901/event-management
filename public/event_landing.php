@@ -55,12 +55,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
             }
 
+            // Dynamic package resolution
+            $pkgId = trim($_POST['package_id'] ?? '');
+            $selectedPackage = null;
+            if (!empty($event['packages']) && is_array($event['packages'])) {
+                foreach ($event['packages'] as $p) {
+                    if (($p['id'] ?? '') === $pkgId) {
+                        $selectedPackage = $p;
+                        break;
+                    }
+                }
+                if (!$selectedPackage && !empty($event['packages'][0])) {
+                    $selectedPackage = $event['packages'][0];
+                }
+            }
+
+            $pkgName = $selectedPackage['name'] ?? ($event['price_label'] ?: 'Standard Pass');
+            $pkgPrice = (float)($selectedPackage['price'] ?? ($event['price_amount'] ?? 0));
+            $totalAmount = $pkgPrice * $passCount;
+
             $bookingData = [
                 'event_id' => $event['id'],
                 'customer_name' => $customerName,
                 'email' => $email,
                 'phone' => $phone,
-                'pass_count' => $passCount
+                'pass_count' => $passCount,
+                'package_id' => $selectedPackage['id'] ?? null,
+                'package_name' => $pkgName,
+                'package_price' => $pkgPrice,
+                'total_amount' => $totalAmount
             ];
 
             $newBooking = BookingService::createBooking($bookingData, $answers);
@@ -175,6 +198,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             background-color: #fff7ed;
             color: #9a3412;
         }
+        /* Rich Text Styling from CKEditor */
+        .rich-text-content {
+            color: #44403c;
+            line-height: 1.7;
+        }
+        .rich-text-content h1, .rich-text-content h2, .rich-text-content h3, .rich-text-content h4 {
+            font-weight: 700;
+            color: #431407;
+            margin-top: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .rich-text-content p {
+            margin-bottom: 0.85rem;
+        }
+        .rich-text-content ul, .rich-text-content ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .rich-text-content li {
+            margin-bottom: 0.35rem;
+        }
+        .rich-text-content table {
+            width: 100%;
+            margin-bottom: 1rem;
+            border-collapse: collapse;
+        }
+        .rich-text-content th, .rich-text-content td {
+            border: 1px solid #fed7aa;
+            padding: 8px 12px;
+        }
+        .rich-text-content blockquote {
+            border-left: 4px solid #ea580c;
+            padding-left: 1rem;
+            color: #78350f;
+            font-style: italic;
+            margin: 1rem 0;
+        }
+        .package-selection-card {
+            transition: all 0.25s ease-in-out;
+            cursor: pointer;
+        }
+        .package-selection-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(194, 65, 12, 0.12) !important;
+            border-color: #ea580c !important;
+        }
     </style>
 </head>
 <body>
@@ -264,8 +333,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div class="col-lg-7">
                 <span class="text-uppercase fw-bold small text-warning">About The Celebration</span>
                 <h2 class="section-title mb-3">Immerse Yourself in Joy and Rhythm</h2>
-                <div class="text-muted lead fs-6 lh-base mb-4">
-                    <?= nl2br(e($event['full_description'] ?: $event['short_description'])) ?>
+                <div class="rich-text-content text-secondary fs-6 lh-base mb-4">
+                    <?= renderRichText($event['full_description'] ?: $event['short_description']) ?>
                 </div>
                 <div class="d-flex gap-3">
                     <div class="d-flex align-items-center gap-2 small text-dark fw-medium">
@@ -319,7 +388,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </section>
     <?php endif; ?>
 
-    <!-- 6 & 7. PASS / PRICING & DYNAMIC BOOKING FORM -->
+    <!-- 6. PACKAGES & TICKETING TIERS -->
+    <?php if (!empty($event['packages']) && is_array($event['packages'])): ?>
+    <section class="mb-5" id="packagesSection">
+        <div class="text-center mb-4">
+            <span class="text-uppercase fw-bold small text-warning">Pass Options & Pricing</span>
+            <h2 class="section-title">Select Your Pass Package</h2>
+            <p class="text-muted small">Choose the ticket tier that best matches your celebration plans.</p>
+        </div>
+        <div class="row g-3 justify-content-center">
+            <?php foreach ($event['packages'] as $pIdx => $pkg): ?>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 p-4 border rounded-4 shadow-sm bg-white position-relative package-selection-card <?= !empty($pkg['badge']) ? 'border-warning border-2' : '' ?>" onclick="selectPackageForBooking('<?= e($pkg['id']) ?>')">
+                        <?php if (!empty($pkg['badge'])): ?>
+                            <span class="position-absolute top-0 end-0 translate-middle-y me-3 badge bg-warning text-dark px-3 py-1 shadow-xs fw-bold rounded-pill text-xs">
+                                <?= e($pkg['badge']) ?>
+                            </span>
+                        <?php endif; ?>
+                        <div class="mb-2">
+                            <h5 class="fw-bold text-dark mb-1"><?= e($pkg['name']) ?></h5>
+                            <div class="fs-3 fw-bold text-danger">
+                                <?= (float)$pkg['price'] > 0 ? '₹' . number_format($pkg['price'], 2) : 'Free Entry' ?>
+                            </div>
+                            <div class="text-muted text-xs">Per pass • Instant Digital Ticket</div>
+                        </div>
+                        <?php if (!empty($pkg['description'])): ?>
+                            <p class="small text-muted mb-3 flex-grow-1 border-top pt-2">
+                                <i data-lucide="check-circle" class="text-success me-1" style="width:14px;height:14px;vertical-align:-2px;"></i>
+                                <?= e($pkg['description']) ?>
+                            </p>
+                        <?php endif; ?>
+                        <button type="button" class="btn btn-outline-warning text-dark w-100 fw-bold py-2 mt-auto shadow-xs" onclick="selectPackageForBooking('<?= e($pkg['id']) ?>')">
+                            Book This Package &rarr;
+                        </button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <!-- 7. PASS / PRICING & DYNAMIC BOOKING FORM -->
     <section class="mb-5" id="bookingSection">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -329,7 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <h2 class="section-title mb-1">Book Your Event Passes</h2>
                         <p class="text-muted small">Fill out the attendee details below. Instant digital QR pass issued upon submission.</p>
                         <div class="d-inline-block bg-light px-4 py-2 rounded-pill mt-2">
-                            <span class="text-muted small">Price: </span>
+                            <span class="text-muted small">Starting Price: </span>
                             <span class="fw-bold text-dark fs-5">
                                 <?= (float)($event['price_amount'] ?? 0) > 0 ? '₹' . number_format($event['price_amount'], 2) : 'Free Entry' ?>
                             </span>
@@ -353,6 +462,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <input type="hidden" name="action" value="book_event">
 
                             <div class="row g-3">
+                                <?php if (!empty($event['packages']) && is_array($event['packages'])): ?>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-semibold">Select Pass Package <span class="text-danger">*</span></label>
+                                        <select name="package_id" id="bookingPackageSelect" class="form-select form-select-lg" onchange="calculateBookingTotal()">
+                                            <?php foreach ($event['packages'] as $pkg): ?>
+                                                <option value="<?= e($pkg['id']) ?>" data-price="<?= (float)$pkg['price'] ?>" data-name="<?= e($pkg['name']) ?>">
+                                                    <?= e($pkg['name']) ?> — <?= (float)$pkg['price'] > 0 ? '₹' . number_format($pkg['price'], 2) : 'Free Entry' ?> <?= !empty($pkg['badge']) ? '★ ' . e($pkg['badge']) : '' ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Your Full Name <span class="text-danger">*</span></label>
                                     <input type="text" name="customer_name" required class="form-control" placeholder="Enter your full name" value="<?= e($_POST['customer_name'] ?? '') ?>">
@@ -367,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Number of Passes <span class="text-danger">*</span></label>
-                                    <select name="pass_count" class="form-select">
+                                    <select name="pass_count" id="passCountSelect" class="form-select" onchange="calculateBookingTotal()">
                                         <?php for ($i = 1; $i <= min(10, $event['available_seats']); $i++): ?>
                                             <option value="<?= $i ?>" <?= (isset($_POST['pass_count']) && (int)$_POST['pass_count'] === $i) ? 'selected' : '' ?>>
                                                 <?= $i ?> <?= $i === 1 ? 'Pass' : 'Passes' ?>
@@ -395,6 +517,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
+
+                                <!-- Live Pass Fee Summary Strip -->
+                                <div class="col-12 mt-3">
+                                    <div class="bg-light p-3 rounded-3 border d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-muted text-xs">Selected Reservation</div>
+                                            <div class="fw-bold text-dark small" id="summaryText">1 × Pass</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="text-muted text-xs">Total Pass Fee</div>
+                                            <div class="fs-5 fw-bold text-danger" id="summaryTotal">₹0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div class="col-12 mt-4">
                                     <button type="submit" class="btn btn-brand w-100 py-3 fs-5 fw-bold d-flex align-items-center justify-content-center gap-2">
@@ -505,6 +641,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>lucide.createIcons();</script>
+<script>
+lucide.createIcons();
+
+function calculateBookingTotal() {
+    const pkgSelect = document.getElementById('bookingPackageSelect');
+    const countSelect = document.getElementById('passCountSelect');
+    if (!countSelect) return;
+    
+    const count = parseInt(countSelect.value) || 1;
+    let price = 0;
+    let name = 'Pass';
+    
+    if (pkgSelect && pkgSelect.selectedOptions && pkgSelect.selectedOptions.length > 0) {
+        const opt = pkgSelect.selectedOptions[0];
+        price = parseFloat(opt.getAttribute('data-price')) || 0;
+        name = opt.getAttribute('data-name') || 'Pass';
+    } else {
+        price = <?= (float)($event['price_amount'] ?? 0) ?>;
+        name = <?= json_encode($event['price_label'] ?: 'Standard Pass') ?>;
+    }
+    
+    const total = count * price;
+    const summaryText = document.getElementById('summaryText');
+    const summaryTotal = document.getElementById('summaryTotal');
+    
+    if (summaryText) {
+        summaryText.textContent = `${count} × ${name}`;
+    }
+    if (summaryTotal) {
+        summaryTotal.textContent = total > 0 ? `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'Free Entry';
+    }
+}
+
+function selectPackageForBooking(pkgId) {
+    const pkgSelect = document.getElementById('bookingPackageSelect');
+    if (pkgSelect) {
+        pkgSelect.value = pkgId;
+    }
+    calculateBookingTotal();
+    const section = document.getElementById('bookingSection');
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', calculateBookingTotal);
+</script>
 </body>
 </html>

@@ -158,6 +158,11 @@ $verifyUrl = appUrl('/verify/' . $token);
                     <div class="col-6">
                         <label class="text-muted small text-uppercase" style="font-size:11px;">Total Passes</label>
                         <div class="fw-bold text-dark fs-6"><?= (int)($booking['pass_count'] ?? 1) ?> Person(s)</div>
+                        <?php if (!empty($booking['package_name'])): ?>
+                            <div class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 text-xs px-2 py-0.5 mt-0.5" style="font-size:10.5px;">
+                                <?= e($booking['package_name']) ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="col-6">
                         <label class="text-muted small text-uppercase" style="font-size:11px;">Event Date & Time</label>

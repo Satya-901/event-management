@@ -93,6 +93,19 @@ function generateId(string $prefix = ''): string {
 }
 
 // Date Formatting Helpers
+function renderRichText(?string $content): string {
+    if (empty($content)) return '';
+    // If content contains HTML tags (e.g. generated from CKEditor)
+    if (strip_tags($content) !== $content) {
+        $allowedTags = '<p><br><b><strong><i><em><u><s><strike><ul><ol><li><blockquote><h3><h4><h5><h6><a><table><thead><tbody><tr><th><td><figure><span><hr><code><pre>';
+        $cleaned = strip_tags($content, $allowedTags);
+        // Remove javascript: URLs and inline event handlers for safety
+        $cleaned = preg_replace('/<([a-z][a-z0-9]*)[^>]*?(\bon[a-z]+\s*=|javascript\s*:)[^>]*?>/i', '<$1>', $cleaned);
+        return $cleaned;
+    }
+    return nl2br(e($content));
+}
+
 function formatDate(?string $date, string $format = 'd M Y'): string {
     if (!$date) return 'N/A';
     try {

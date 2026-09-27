@@ -78,6 +78,25 @@ foreach ($formFields as $f) {
     }
 }
 
+// Package details resolution
+$pkgId = trim($input['package_id'] ?? '');
+$selectedPackage = null;
+if (!empty($event['packages']) && is_array($event['packages'])) {
+    foreach ($event['packages'] as $p) {
+        if (($p['id'] ?? '') === $pkgId) {
+            $selectedPackage = $p;
+            break;
+        }
+    }
+    if (!$selectedPackage && !empty($event['packages'][0])) {
+        $selectedPackage = $event['packages'][0];
+    }
+}
+
+$pkgName = $selectedPackage['name'] ?? ($event['price_label'] ?: 'Standard Pass');
+$pkgPrice = (float)($selectedPackage['price'] ?? ($event['price_amount'] ?? 0));
+$totalAmount = $pkgPrice * $passCount;
+
 try {
     $booking = BookingService::createBooking([
         'client_id' => $event['client_id'],
@@ -86,6 +105,10 @@ try {
         'email' => $email,
         'phone' => $phone,
         'pass_count' => $passCount,
+        'package_id' => $selectedPackage['id'] ?? null,
+        'package_name' => $pkgName,
+        'package_price' => $pkgPrice,
+        'total_amount' => $totalAmount,
         'custom_fields' => $customData,
         'status' => 'confirmed'
     ]);

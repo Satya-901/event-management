@@ -401,7 +401,7 @@ $unreadLeadCount = LeadService::getStats()['new'] ?? 0;
             </a>
         </li>
         <li>
-            <a href="/admin/events" class="admin-link <?= $currentPage === 'events' ? 'active' : '' ?>">
+            <a href="/admin/events" class="admin-link <?= in_array($currentPage, ['events', 'event_create', 'event_edit']) ? 'active' : '' ?>">
                 <i data-lucide="calendar" style="width:18px;height:18px;"></i> Global Events
             </a>
         </li>

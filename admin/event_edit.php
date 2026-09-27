@@ -3,16 +3,17 @@ $pageTitle = "Edit Event";
 require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/services/EventService.php';
+require_once __DIR__ . '/../includes/services/ClientService.php';
 
-$clientId = getCurrentClientId();
 $eventId = $_GET['id'] ?? '';
-
-// Strict tenant ownership check
-$event = EventService::getEvent($eventId, $clientId);
+$event = EventService::getEvent($eventId);
 if (!$event) {
-    redirect('/403.php');
+    setFlash('error', 'Event not found.');
+    redirect('/admin/events');
+    exit;
 }
 
+$clients = ClientService::getAllClients();
 $error = null;
 $success = null;
 
@@ -26,7 +27,7 @@ if (!is_array($existingPackages) || empty($existingPackages)) {
             'price' => (float)($event['price_amount'] ?? 0),
             'capacity' => (int)($event['max_capacity'] ?? 500),
             'badge' => '',
-            'description' => 'General event admission pass'
+            'description' => 'General event entry pass'
         ]
     ];
 }
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "CSRF verification failed. Please try again.";
     } else {
         try {
+            $clientId = trim($_POST['client_id'] ?? $event['client_id']);
             $name = trim($_POST['name'] ?? '');
             $startDate = trim($_POST['start_date'] ?? '');
             $venueName = trim($_POST['venue_name'] ?? '');
@@ -80,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $primaryLabel = $packages[0]['name'] ?? 'Standard Pass';
 
             $updateData = [
+                'client_id' => $clientId,
                 'name' => $name,
                 'category' => trim($_POST['category'] ?? 'Festival & Cultural'),
                 'short_description' => trim($_POST['short_description'] ?? ''),
@@ -101,29 +104,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'status' => trim($_POST['status'] ?? 'published')
             ];
 
-            EventService::updateEvent($eventId, $updateData, $clientId, $currentUser);
+            EventService::updateEvent($eventId, $updateData, null, $currentUser);
 
             $success = "Event details and " . count($packages) . " package(s) updated successfully!";
-            $event = EventService::getEvent($eventId, $clientId);
+            $event = EventService::getEvent($eventId);
             $existingPackages = $event['packages'] ?? $packages;
         } catch (Exception $e) {
             $error = $e->getMessage();
         }
     }
 }
+
+// Find client info for public link
+$eventClient = null;
+foreach ($clients as $c) {
+    if ($c['id'] === $event['client_id']) {
+        $eventClient = $c;
+        break;
+    }
+}
 ?>
 
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-1" style="color:#0f172a;">Edit: <?= e($event['name']) ?></h4>
-        <p class="text-muted small mb-0">Update event details, timing, venue, rich schedule, and ticket packages.</p>
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Edit Event: <?= e($event['name']) ?></h4>
+        <p class="text-muted small mb-0">Modify event parameters, rich description, schedule, and ticket package tiers.</p>
     </div>
-    <div class="d-flex gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
-        <a href="/<?= e($currentClient['slug']) ?>/<?= e($event['slug']) ?>/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
-            <i data-lucide="external-link" style="width:14px;height:14px;"></i> Public Page
-        </a>
-        <a href="/client/events/builder?id=<?= e($event['id']) ?>" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs">
-            <i data-lucide="sliders" style="width:14px;height:14px;"></i> Form Builder
+    <div class="d-flex gap-2">
+        <?php if ($eventClient): ?>
+            <a href="/<?= e($eventClient['slug']) ?>/<?= e($event['slug']) ?>/" target="_blank" class="btn btn-outline-secondary btn-sm shadow-xs d-inline-flex align-items-center gap-1.5">
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i> View Public Page
+            </a>
+        <?php endif; ?>
+        <a href="/admin/events" class="btn btn-outline-secondary btn-sm shadow-xs d-inline-flex align-items-center gap-1.5">
+            <i data-lucide="arrow-left" style="width:14px;height:14px;"></i> Return to Events
         </a>
     </div>
 </div>
@@ -134,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <span><?= e($error) ?></span>
     </div>
 <?php endif; ?>
+
 <?php if ($success): ?>
     <div class="alert alert-success py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2 shadow-xs">
         <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
@@ -141,16 +156,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 <?php endif; ?>
 
-<form method="POST" action="/client/events/edit?id=<?= e($event['id']) ?>" id="eventForm" class="card p-3 p-md-4 shadow-xs mb-5">
+<form method="POST" action="/admin/events/edit?id=<?= e($event['id']) ?>" id="eventForm" class="card card-dark p-3 p-md-4 mb-5">
     <?= csrfInput() ?>
 
     <div class="row g-3">
-        <div class="col-md-8">
-            <label class="form-label small fw-semibold text-secondary">Event Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" class="form-control" value="<?= e($event['name']) ?>" required>
+        <!-- 1. Tenant & Status -->
+        <div class="col-12 border-bottom pb-2 mb-1">
+            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i data-lucide="building" class="text-primary" style="width:18px;height:18px;"></i> Tenant Organization & Status
+            </h6>
         </div>
+
+        <div class="col-md-5">
+            <label class="form-label small fw-semibold text-secondary">Client Tenant Organization</label>
+            <select name="client_id" class="form-select" required>
+                <?php foreach ($clients as $c): ?>
+                    <option value="<?= e($c['id']) ?>" <?= ($event['client_id'] === $c['id']) ? 'selected' : '' ?>>
+                        <?= e($c['name']) ?> (<?= e($c['code']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
         <div class="col-md-4">
-            <label class="form-label small fw-semibold text-secondary">Status</label>
+            <label class="form-label small fw-semibold text-secondary">Category</label>
+            <select name="category" class="form-select">
+                <option value="Festival & Cultural" <?= ($event['category'] ?? '') === 'Festival & Cultural' ? 'selected' : '' ?>>Festival & Cultural</option>
+                <option value="Music Concert" <?= ($event['category'] ?? '') === 'Music Concert' ? 'selected' : '' ?>>Music Concert</option>
+                <option value="Gala & Celebrations" <?= ($event['category'] ?? '') === 'Gala & Celebrations' ? 'selected' : '' ?>>Gala & Celebrations</option>
+                <option value="Conference & Expo" <?= ($event['category'] ?? '') === 'Conference & Expo' ? 'selected' : '' ?>>Conference & Expo</option>
+                <option value="Sports & Fitness" <?= ($event['category'] ?? '') === 'Sports & Fitness' ? 'selected' : '' ?>>Sports & Fitness</option>
+                <option value="Community & Networking" <?= ($event['category'] ?? '') === 'Community & Networking' ? 'selected' : '' ?>>Community & Networking</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold text-secondary">Publication Status</label>
             <select name="status" class="form-select">
                 <option value="published" <?= ($event['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published (Visible)</option>
                 <option value="draft" <?= ($event['status'] ?? '') === 'draft' ? 'selected' : '' ?>>Draft (Hidden)</option>
@@ -158,16 +199,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
 
-        <div class="col-md-8">
-            <label class="form-label small fw-semibold text-secondary">Event Category</label>
-            <select name="category" class="form-select">
-                <option value="Festival & Cultural" <?= ($event['category'] ?? '') === 'Festival & Cultural' ? 'selected' : '' ?>>Festival & Cultural</option>
-                <option value="Music Concert" <?= ($event['category'] ?? '') === 'Music Concert' ? 'selected' : '' ?>>Music Concert</option>
-                <option value="Gala & Celebrations" <?= ($event['category'] ?? '') === 'Gala & Celebrations' ? 'selected' : '' ?>>Gala & Celebrations</option>
-                <option value="Conference & Expo" <?= ($event['category'] ?? '') === 'Conference & Expo' ? 'selected' : '' ?>>Conference & Expo</option>
-                <option value="Sports & Fitness" <?= ($event['category'] ?? '') === 'Sports & Fitness' ? 'selected' : '' ?>>Sports & Fitness</option>
-                <option value="Food & Nightlife" <?= ($event['category'] ?? '') === 'Food & Nightlife' ? 'selected' : '' ?>>Food & Nightlife</option>
-            </select>
+        <div class="col-12">
+            <label class="form-label small fw-semibold text-secondary">Event Title / Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" value="<?= e($event['name']) ?>" required>
         </div>
 
         <div class="col-12">
@@ -175,66 +209,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="text" name="short_description" class="form-control" value="<?= e($event['short_description']) ?>">
         </div>
 
-        <!-- CKEditor 5 for Full Description -->
+        <!-- 2. CKEditor for Full Description -->
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <label class="form-label small fw-semibold text-secondary mb-0">
-                    Full Description & Schedule <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 ms-1">CKEditor Rich Text</span>
+                    Full Description & Schedule <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1">CKEditor Rich Text</span>
                 </label>
-                <span class="text-muted text-xs" style="font-size:11px;">Format schedule, artists, food, and rules with rich formatting</span>
+                <span class="text-muted text-xs" style="font-size:11px;">Format text with bold, headings, bullet lists, and tables</span>
             </div>
             <textarea name="full_description" id="full_description" class="form-control" rows="8"><?= e($event['full_description']) ?></textarea>
         </div>
 
+        <!-- 3. Banner & Dates -->
+        <div class="col-12 border-bottom pt-3 pb-2 mb-1">
+            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i data-lucide="calendar" class="text-primary" style="width:18px;height:18px;"></i> Timing & Venue Details
+            </h6>
+        </div>
+
         <div class="col-md-12">
-            <label class="form-label small fw-semibold text-secondary">Banner Image URL</label>
+            <label class="form-label small fw-semibold text-secondary">Banner Cover Image URL</label>
             <input type="url" name="banner" class="form-control" value="<?= e($event['banner']) ?>">
         </div>
 
         <div class="col-6 col-md-3">
-            <label class="form-label small fw-semibold">Start Date <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">Start Date <span class="text-danger">*</span></label>
             <input type="date" name="start_date" class="form-control" value="<?= e($event['start_date']) ?>" required>
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label small fw-semibold">Start Time</label>
+            <label class="form-label small fw-semibold text-secondary">Start Time</label>
             <input type="time" name="start_time" class="form-control" value="<?= e($event['start_time']) ?>">
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label small fw-semibold">End Date</label>
+            <label class="form-label small fw-semibold text-secondary">End Date</label>
             <input type="date" name="end_date" class="form-control" value="<?= e($event['end_date']) ?>">
         </div>
         <div class="col-6 col-md-3">
-            <label class="form-label small fw-semibold">End Time</label>
+            <label class="form-label small fw-semibold text-secondary">End Time</label>
             <input type="time" name="end_time" class="form-control" value="<?= e($event['end_time']) ?>">
         </div>
 
         <div class="col-md-6">
-            <label class="form-label small fw-semibold">Venue Name <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold text-secondary">Venue Name <span class="text-danger">*</span></label>
             <input type="text" name="venue_name" class="form-control" value="<?= e($event['venue_name']) ?>" required>
         </div>
         <div class="col-md-3">
-            <label class="form-label small fw-semibold">City</label>
+            <label class="form-label small fw-semibold text-secondary">City</label>
             <input type="text" name="city" class="form-control" value="<?= e($event['city']) ?>">
         </div>
         <div class="col-md-3">
-            <label class="form-label small fw-semibold">Google Maps URL</label>
+            <label class="form-label small fw-semibold text-secondary">Google Maps Link</label>
             <input type="url" name="google_maps_url" class="form-control" value="<?= e($event['google_maps_url'] ?? '') ?>">
         </div>
         <div class="col-12">
-            <label class="form-label small fw-semibold">Full Address</label>
-            <input type="text" name="address" class="form-control" value="<?= e($event['address']) ?>">
+            <label class="form-label small fw-semibold text-secondary">Full Street Address</label>
+            <input type="text" name="address" class="form-control" value="<?= e($event['address'] ?? '') ?>">
         </div>
 
-        <!-- Dynamic Packages Builder -->
+        <!-- 4. Dynamic Packages Builder -->
         <div class="col-12 border-bottom pt-4 pb-2 mb-2">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                 <div>
                     <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i data-lucide="layers" class="text-warning" style="width:18px;height:18px;"></i> Event Ticket Packages & Pricing Tiers
+                        <i data-lucide="layers" class="text-primary" style="width:18px;height:18px;"></i> Event Ticket Packages & Pricing Tiers
                     </h6>
-                    <p class="text-muted text-xs mb-0 mt-0.5" style="font-size:12px;">Create and manage multiple packages (e.g. VIP, Couples Pass, Early Bird) with distinct prices and perks.</p>
+                    <p class="text-muted text-xs mb-0 mt-0.5" style="font-size:12px;">Modify existing packages or add new ticket tiers with customized prices and perks.</p>
                 </div>
-                <button type="button" id="btnAddPackage" class="btn btn-outline-warning text-dark btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                <button type="button" id="btnAddPackage" class="btn btn-outline-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
                     <i data-lucide="plus" style="width:15px;height:15px;"></i> Add Another Package
                 </button>
             </div>
@@ -246,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="package-item card p-3 border bg-light bg-opacity-50 position-relative rounded-3 shadow-xs" data-index="<?= $idx ?>">
                         <input type="hidden" name="packages[<?= $idx ?>][id]" value="<?= e($pkg['id'] ?? generateId('pkg')) ?>">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge <?= $idx === 0 ? 'bg-warning text-dark' : 'bg-secondary text-white' ?> text-xs px-2 py-1 package-number-badge">
+                            <span class="badge <?= $idx === 0 ? 'bg-primary text-white' : ($idx === 1 ? 'bg-warning text-dark' : 'bg-secondary text-white') ?> text-xs px-2 py-1 package-number-badge">
                                 Package #<?= $idx + 1 ?>
                             </span>
                             <button type="button" class="btn btn-link text-danger p-0 text-decoration-none btn-remove-pkg" style="font-size:12px;" onclick="removePackage(this)">
@@ -279,12 +320,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endforeach; ?>
             </div>
 
+            <!-- Dynamic Package Summary Banner -->
             <div class="d-flex justify-content-between align-items-center bg-white border rounded-3 p-2.5 mt-2 text-xs">
                 <span class="text-muted"><i data-lucide="info" style="width:14px;height:14px;vertical-align:-2px;" class="me-1"></i> Total Packages Configured: <strong id="packageCountDisplay" class="text-dark"><?= count($existingPackages) ?></strong></span>
-                <span class="text-muted">Total Pass Allocation: <strong id="packageCapacityDisplay" class="text-warning"><?= (int)($event['max_capacity'] ?? 500) ?> passes</strong></span>
+                <span class="text-muted">Total Pass Allocation: <strong id="packageCapacityDisplay" class="text-primary"><?= (int)($event['max_capacity'] ?? 500) ?> passes</strong></span>
             </div>
         </div>
 
+        <!-- 5. Overall Capacity & Registration Settings -->
         <div class="col-12 border-top pt-3 mt-3">
             <div class="row g-3 align-items-center">
                 <div class="col-md-6">
@@ -296,15 +339,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-check form-switch pt-sm-3">
                         <input class="form-check-input" type="checkbox" name="booking_open" id="bookingOpenSwitch" <?= !empty($event['booking_open']) ? 'checked' : '' ?>>
                         <label class="form-check-label fw-semibold text-dark small" for="bookingOpenSwitch">Accept Public Registrations Immediately</label>
+                        <div class="text-muted text-xs">Guests can reserve their passes immediately once published.</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-            <a href="/client/events" class="btn btn-light border">Cancel</a>
-            <button type="submit" class="btn btn-warning fw-semibold text-white px-4 shadow-xs" style="background-color:#ea580c !important; border-color:#ea580c !important;">
-                Save Changes & Packages
+        <!-- Submit Button Row -->
+        <div class="col-12 mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+            <a href="/admin/events" class="btn btn-light border btn-sm">Cancel</a>
+            <button type="submit" class="btn btn-primary fw-semibold px-4 shadow-sm d-inline-flex align-items-center gap-2">
+                <i data-lucide="save" style="width:16px;height:16px;"></i> Save Changes & Packages
             </button>
         </div>
     </div>
@@ -334,8 +379,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transition: all 0.2s ease-in-out;
     }
     .package-item:hover {
-        border-color: #fdba74 !important;
-        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08) !important;
+        border-color: #93c5fd !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08) !important;
     }
 </style>
 
@@ -371,12 +416,14 @@ ClassicEditor
         console.error('CKEditor error:', error);
     });
 
+// Sync on form submit
 document.getElementById('eventForm').addEventListener('submit', function() {
     if (editorInstance) {
         document.querySelector('#full_description').value = editorInstance.getData();
     }
 });
 
+// Dynamic Package Builder Manager
 let packageIndexCounter = <?= count($existingPackages) + 5 ?>;
 
 function updatePackageSummary() {
@@ -389,11 +436,11 @@ function updatePackageSummary() {
         if (badge) {
             badge.textContent = `Package #${idx + 1}`;
             if (idx === 0) {
-                badge.className = 'badge bg-warning text-dark text-xs px-2 py-1 package-number-badge';
+                badge.className = 'badge bg-primary text-white text-xs px-2 py-1 package-number-badge';
             } else if (idx === 1) {
-                badge.className = 'badge bg-secondary text-white text-xs px-2 py-1 package-number-badge';
+                badge.className = 'badge bg-warning text-dark text-xs px-2 py-1 package-number-badge';
             } else {
-                badge.className = 'badge bg-light text-dark border text-xs px-2 py-1 package-number-badge';
+                badge.className = 'badge bg-secondary text-white text-xs px-2 py-1 package-number-badge';
             }
         }
         const capInput = item.querySelector('.pkg-cap-input');

@@ -92,6 +92,10 @@ class BookingService {
             'email' => strtolower(trim($data['email'] ?? '')),
             'phone' => trim($data['phone'] ?? ''),
             'pass_count' => $passCount,
+            'package_id' => $data['package_id'] ?? null,
+            'package_name' => $data['package_name'] ?? null,
+            'package_price' => isset($data['package_price']) ? (float)$data['package_price'] : 0,
+            'total_amount' => isset($data['total_amount']) ? (float)$data['total_amount'] : 0,
             'booking_date' => date('Y-m-d'),
             'status' => ($event['confirmation_mode'] === 'manual') ? 'pending' : 'confirmed',
             'qr_token' => generateSecureQrToken()

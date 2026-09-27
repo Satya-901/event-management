@@ -11,12 +11,11 @@ function getDataStore(): DataStore {
     static $instance = null;
     if ($instance === null) {
         $driver = strtolower(defined('DATA_DRIVER') ? DATA_DRIVER : 'json');
-        if ($driver === 'sql' || $driver === 'mysql') {
+        if (($driver === 'sql' || $driver === 'mysql') && extension_loaded('pdo_mysql') && in_array('mysql', PDO::getAvailableDrivers())) {
             try {
                 $instance = new SqlDataStore();
             } catch (Throwable $e) {
-                // Fallback to JSON if SQL connection/driver fails
-                error_log("SqlDataStore failed, falling back to JsonDataStore: " . $e->getMessage());
+                // Fallback to JSON if SQL connection fails
                 $instance = new JsonDataStore();
             }
         } else {
