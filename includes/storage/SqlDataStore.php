@@ -9,6 +9,7 @@ require_once __DIR__ . '/../helpers.php';
 
 class SqlDataStore implements DataStore {
     protected ?PDO $pdo = null;
+    protected array $columnsCache = [];
 
     public function __construct() {
         // Lazy PDO connection with prepared statements
@@ -33,6 +34,31 @@ class SqlDataStore implements DataStore {
         return $this->pdo;
     }
 
+    public function getTableColumns(string $table): array {
+        $cleanTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+        if (!isset($this->columnsCache[$cleanTable])) {
+            try {
+                $stmt = $this->pdo->query("SHOW COLUMNS FROM `{$cleanTable}`");
+                $this->columnsCache[$cleanTable] = array_map(fn($row) => strtolower($row['Field']), $stmt->fetchAll(PDO::FETCH_ASSOC));
+            } catch (Throwable $e) {
+                $this->columnsCache[$cleanTable] = [];
+            }
+        }
+        return $this->columnsCache[$cleanTable];
+    }
+
+    protected function ensureColumn(string $table, string $column, string $definition): void {
+        try {
+            $cols = $this->getTableColumns($table);
+            if (!empty($cols) && !in_array(strtolower($column), $cols, true)) {
+                $this->pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition}");
+                $this->columnsCache[$table][] = strtolower($column);
+            }
+        } catch (Throwable $e) {
+            error_log("Schema auto-migration notice ({$table}.{$column}): " . $e->getMessage());
+        }
+    }
+
     protected function ensureSchema(): void {
         try {
             $check = $this->pdo->query("SHOW TABLES LIKE 'clients'")->fetch();
@@ -51,6 +77,16 @@ class SqlDataStore implements DataStore {
                         seedProductionAdmin();
                     }
                 }
+            } else {
+                // Table already exists - verify and auto-add missing columns
+                $this->ensureColumn('clients', 'terms_and_conditions', "LONGTEXT NULL");
+                $this->ensureColumn('clients', 'cancellation_policy', "LONGTEXT NULL");
+                $this->ensureColumn('events', 'show_gallery', "TINYINT(1) NOT NULL DEFAULT 0");
+                $this->ensureColumn('events', 'packages', "JSON NULL");
+                $this->ensureColumn('bookings', 'package_id', "VARCHAR(64) NULL");
+                $this->ensureColumn('bookings', 'package_name', "VARCHAR(191) NULL");
+                $this->ensureColumn('bookings', 'package_price', "DECIMAL(10,2) NULL DEFAULT 0.00");
+                $this->ensureColumn('bookings', 'total_amount', "DECIMAL(10,2) NULL DEFAULT 0.00");
             }
         } catch (Throwable $t) {
             error_log("Schema auto-provision notice: " . $t->getMessage());
@@ -88,11 +124,10 @@ class SqlDataStore implements DataStore {
         $code = !empty($data['code']) ? $data['code'] : generateClientCode();
         $slug = !empty($data['slug']) ? slugify($data['slug']) : slugify($data['name'] ?? 'client');
 
-        $sql = "INSERT INTO clients (id, name, company_name, email, mobile, address, logo, status, code, slug, created_at, updated_at)
-                VALUES (:id, :name, :company_name, :email, :mobile, :address, :logo, :status, :code, :slug, NOW(), NOW())";
-        
-        $stmt = $this->getPdo()->prepare($sql);
-        $stmt->execute([
+        $this->ensureColumn('clients', 'terms_and_conditions', "LONGTEXT NULL");
+        $this->ensureColumn('clients', 'cancellation_policy', "LONGTEXT NULL");
+
+        $payload = [
             'id' => $id,
             'name' => $data['name'] ?? '',
             'company_name' => $data['company_name'] ?? ($data['name'] ?? ''),
@@ -105,24 +140,66 @@ class SqlDataStore implements DataStore {
             'slug' => $slug,
             'terms_and_conditions' => $data['terms_and_conditions'] ?? '',
             'cancellation_policy' => $data['cancellation_policy'] ?? ''
-        ]);
+        ];
+
+        $validCols = $this->getTableColumns('clients');
+        $insertCols = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($payload as $col => $val) {
+            if (empty($validCols) || in_array(strtolower($col), $validCols, true)) {
+                $insertCols[] = "`{$col}`";
+                $placeholders[] = ":{$col}";
+                $params[$col] = is_array($val) ? json_encode($val) : $val;
+            }
+        }
+
+        if (empty($validCols) || in_array('created_at', $validCols, true)) {
+            $insertCols[] = "`created_at`";
+            $placeholders[] = "NOW()";
+        }
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $insertCols[] = "`updated_at`";
+            $placeholders[] = "NOW()";
+        }
+
+        $sql = "INSERT INTO clients (" . implode(', ', $insertCols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $this->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         return $this->getClientById($id);
     }
 
     public function updateClient(string $id, array $data): bool {
+        $validCols = $this->getTableColumns('clients');
         $fields = [];
         $params = ['id' => $id];
 
         foreach ($data as $key => $value) {
             if ($key === 'id') continue;
+            // Check if column exists, or attempt auto-migration
+            if (!empty($validCols) && !in_array(strtolower($key), $validCols, true)) {
+                if ($key === 'terms_and_conditions' || $key === 'cancellation_policy') {
+                    $this->ensureColumn('clients', $key, "LONGTEXT NULL");
+                    $validCols = $this->getTableColumns('clients');
+                    if (!in_array(strtolower($key), $validCols, true)) {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+            if (is_array($value)) $value = json_encode($value);
             $fields[] = "`{$key}` = :{$key}";
             $params[$key] = $value;
         }
 
-        if (empty($fields)) return false;
+        if (empty($fields)) return true;
 
-        $fields[] = "`updated_at` = NOW()";
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $fields[] = "`updated_at` = NOW()";
+        }
         $sql = "UPDATE clients SET " . implode(', ', $fields) . " WHERE id = :id";
         $stmt = $this->getPdo()->prepare($sql);
         return $stmt->execute($params);
@@ -204,39 +281,55 @@ class SqlDataStore implements DataStore {
         return $stmt->execute(['id' => $id]);
     }
 
+    protected function formatEventRow(?array $row): ?array {
+        if (!$row) return null;
+        $jsonFields = ['gallery', 'packages', 'social_links', 'highlights', 'faqs'];
+        foreach ($jsonFields as $f) {
+            if (isset($row[$f]) && is_string($row[$f])) {
+                $decoded = json_decode($row[$f], true);
+                $row[$f] = is_array($decoded) ? $decoded : [];
+            } elseif (!isset($row[$f]) || !is_array($row[$f])) {
+                $row[$f] = [];
+            }
+        }
+        $row['show_gallery'] = !empty($row['show_gallery']) ? 1 : 0;
+        return $row;
+    }
+
     public function getEvents(?string $clientId = null): array {
         if ($clientId !== null) {
             $stmt = $this->getPdo()->prepare("SELECT * FROM events WHERE client_id = :client_id ORDER BY start_date DESC");
             $stmt->execute(['client_id' => $clientId]);
-            return $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
+        } else {
+            $stmt = $this->getPdo()->query("SELECT * FROM events ORDER BY start_date DESC");
+            $rows = $stmt->fetchAll();
         }
-        $stmt = $this->getPdo()->query("SELECT * FROM events ORDER BY start_date DESC");
-        return $stmt->fetchAll();
+        return array_map([$this, 'formatEventRow'], $rows);
     }
 
     public function getEventById(string $id): ?array {
         $stmt = $this->getPdo()->prepare("SELECT * FROM events WHERE id = :id LIMIT 1");
         $stmt->execute(['id' => $id]);
         $res = $stmt->fetch();
-        return $res ?: null;
+        return $res ? $this->formatEventRow($res) : null;
     }
 
     public function getEventBySlug(string $clientId, string $slug): ?array {
         $stmt = $this->getPdo()->prepare("SELECT * FROM events WHERE client_id = :client_id AND slug = :slug LIMIT 1");
         $stmt->execute(['client_id' => $clientId, 'slug' => $slug]);
         $res = $stmt->fetch();
-        return $res ?: null;
+        return $res ? $this->formatEventRow($res) : null;
     }
 
     public function createEvent(array $data): array {
         $id = generateId('evt');
         $slug = !empty($data['slug']) ? slugify($data['slug']) : slugify($data['name'] ?? 'event');
 
-        $sql = "INSERT INTO events (id, client_id, name, slug, short_description, full_description, category, status, banner, logo, gallery, start_date, start_time, end_date, end_time, venue_name, address, city, state, pincode, google_maps_url, booking_open, max_capacity, available_seats, confirmation_mode, price_label, price_amount, contact_email, contact_phone, contact_whatsapp, social_links, highlights, faqs, meta_title, meta_description, og_image, keywords, created_at, updated_at)
-                VALUES (:id, :client_id, :name, :slug, :short_description, :full_description, :category, :status, :banner, :logo, :gallery, :start_date, :start_time, :end_date, :end_time, :venue_name, :address, :city, :state, :pincode, :google_maps_url, :booking_open, :max_capacity, :available_seats, :confirmation_mode, :price_label, :price_amount, :contact_email, :contact_phone, :contact_whatsapp, :social_links, :highlights, :faqs, :meta_title, :meta_description, :og_image, :keywords, NOW(), NOW())";
-        
-        $stmt = $this->getPdo()->prepare($sql);
-        $stmt->execute([
+        $this->ensureColumn('events', 'show_gallery', "TINYINT(1) NOT NULL DEFAULT 0");
+        $this->ensureColumn('events', 'packages', "JSON NULL");
+
+        $payload = [
             'id' => $id,
             'client_id' => $data['client_id'] ?? '',
             'name' => $data['name'] ?? '',
@@ -247,8 +340,9 @@ class SqlDataStore implements DataStore {
             'status' => $data['status'] ?? 'published',
             'banner' => $data['banner'] ?? '',
             'logo' => $data['logo'] ?? '',
-            'gallery' => json_encode($data['gallery'] ?? []),
+            'gallery' => is_array($data['gallery'] ?? null) ? json_encode($data['gallery']) : ($data['gallery'] ?? '[]'),
             'show_gallery' => (int)($data['show_gallery'] ?? 0),
+            'packages' => is_array($data['packages'] ?? null) ? json_encode($data['packages']) : ($data['packages'] ?? '[]'),
             'start_date' => $data['start_date'] ?? date('Y-m-d'),
             'start_time' => $data['start_time'] ?? '19:00',
             'end_date' => $data['end_date'] ?? ($data['start_date'] ?? date('Y-m-d')),
@@ -265,35 +359,76 @@ class SqlDataStore implements DataStore {
             'confirmation_mode' => $data['confirmation_mode'] ?? 'instant',
             'price_label' => $data['price_label'] ?? 'Free Registration',
             'price_amount' => (float)($data['price_amount'] ?? 0),
-            'packages' => json_encode($data['packages'] ?? []),
             'contact_email' => $data['contact_email'] ?? '',
             'contact_phone' => $data['contact_phone'] ?? '',
             'contact_whatsapp' => $data['contact_whatsapp'] ?? '',
-            'social_links' => json_encode($data['social_links'] ?? []),
-            'highlights' => json_encode($data['highlights'] ?? []),
-            'faqs' => json_encode($data['faqs'] ?? []),
+            'social_links' => is_array($data['social_links'] ?? null) ? json_encode($data['social_links']) : ($data['social_links'] ?? '[]'),
+            'highlights' => is_array($data['highlights'] ?? null) ? json_encode($data['highlights']) : ($data['highlights'] ?? '[]'),
+            'faqs' => is_array($data['faqs'] ?? null) ? json_encode($data['faqs']) : ($data['faqs'] ?? '[]'),
             'meta_title' => $data['meta_title'] ?? '',
             'meta_description' => $data['meta_description'] ?? '',
             'og_image' => $data['og_image'] ?? '',
             'keywords' => $data['keywords'] ?? ''
-        ]);
+        ];
+
+        $validCols = $this->getTableColumns('events');
+        $insertCols = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($payload as $col => $val) {
+            if (empty($validCols) || in_array(strtolower($col), $validCols, true)) {
+                $insertCols[] = "`{$col}`";
+                $placeholders[] = ":{$col}";
+                $params[$col] = $val;
+            }
+        }
+
+        if (empty($validCols) || in_array('created_at', $validCols, true)) {
+            $insertCols[] = "`created_at`";
+            $placeholders[] = "NOW()";
+        }
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $insertCols[] = "`updated_at`";
+            $placeholders[] = "NOW()";
+        }
+
+        $sql = "INSERT INTO events (" . implode(', ', $insertCols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $this->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         return $this->getEventById($id);
     }
 
     public function updateEvent(string $id, array $data): bool {
+        $validCols = $this->getTableColumns('events');
         $fields = [];
         $params = ['id' => $id];
 
         foreach ($data as $k => $v) {
             if ($k === 'id') continue;
+            if (!empty($validCols) && !in_array(strtolower($k), $validCols, true)) {
+                if ($k === 'show_gallery') {
+                    $this->ensureColumn('events', 'show_gallery', "TINYINT(1) NOT NULL DEFAULT 0");
+                    $validCols = $this->getTableColumns('events');
+                    if (!in_array(strtolower($k), $validCols, true)) continue;
+                } elseif ($k === 'packages') {
+                    $this->ensureColumn('events', 'packages', "JSON NULL");
+                    $validCols = $this->getTableColumns('events');
+                    if (!in_array(strtolower($k), $validCols, true)) continue;
+                } else {
+                    continue;
+                }
+            }
             if (is_array($v)) $v = json_encode($v);
             $fields[] = "`{$k}` = :{$k}";
             $params[$k] = $v;
         }
 
-        if (empty($fields)) return false;
-        $fields[] = "`updated_at` = NOW()";
+        if (empty($fields)) return true;
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $fields[] = "`updated_at` = NOW()";
+        }
 
         $sql = "UPDATE events SET " . implode(', ', $fields) . " WHERE id = :id";
         return $this->getPdo()->prepare($sql)->execute($params);
@@ -384,11 +519,12 @@ class SqlDataStore implements DataStore {
         $bookingNumber = $bookingData['booking_number'] ?? generateBookingNumber();
         $qrToken = $bookingData['qr_token'] ?? generateSecureQrToken();
 
-        $sql = "INSERT INTO bookings (id, client_id, event_id, booking_number, customer_name, email, phone, pass_count, booking_date, status, qr_token, ip_address, created_at, updated_at)
-                VALUES (:id, :client_id, :event_id, :booking_number, :customer_name, :email, :phone, :pass_count, :booking_date, :status, :qr_token, :ip_address, NOW(), NOW())";
-        
-        $stmt = $this->getPdo()->prepare($sql);
-        $stmt->execute([
+        $this->ensureColumn('bookings', 'package_id', "VARCHAR(64) NULL");
+        $this->ensureColumn('bookings', 'package_name', "VARCHAR(191) NULL");
+        $this->ensureColumn('bookings', 'package_price', "DECIMAL(10,2) NULL DEFAULT 0.00");
+        $this->ensureColumn('bookings', 'total_amount', "DECIMAL(10,2) NULL DEFAULT 0.00");
+
+        $payload = [
             'id' => $id,
             'client_id' => $bookingData['client_id'] ?? '',
             'event_id' => $bookingData['event_id'] ?? '',
@@ -397,11 +533,41 @@ class SqlDataStore implements DataStore {
             'email' => $bookingData['email'] ?? '',
             'phone' => $bookingData['phone'] ?? '',
             'pass_count' => (int)($bookingData['pass_count'] ?? 1),
+            'package_id' => $bookingData['package_id'] ?? null,
+            'package_name' => $bookingData['package_name'] ?? null,
+            'package_price' => isset($bookingData['package_price']) ? (float)$bookingData['package_price'] : 0.00,
+            'total_amount' => isset($bookingData['total_amount']) ? (float)$bookingData['total_amount'] : 0.00,
             'booking_date' => $bookingData['booking_date'] ?? date('Y-m-d'),
             'status' => $bookingData['status'] ?? 'confirmed',
             'qr_token' => $qrToken,
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? ''
-        ]);
+        ];
+
+        $validCols = $this->getTableColumns('bookings');
+        $insertCols = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($payload as $col => $val) {
+            if (empty($validCols) || in_array(strtolower($col), $validCols, true)) {
+                $insertCols[] = "`{$col}`";
+                $placeholders[] = ":{$col}";
+                $params[$col] = $val;
+            }
+        }
+
+        if (empty($validCols) || in_array('created_at', $validCols, true)) {
+            $insertCols[] = "`created_at`";
+            $placeholders[] = "NOW()";
+        }
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $insertCols[] = "`updated_at`";
+            $placeholders[] = "NOW()";
+        }
+
+        $sql = "INSERT INTO bookings (" . implode(', ', $insertCols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $this->getPdo()->prepare($sql);
+        $stmt->execute($params);
 
         if (!empty($answers)) {
             $ansStmt = $this->getPdo()->prepare("INSERT INTO booking_answers (id, booking_id, field_key, field_value, created_at) VALUES (:id, :booking_id, :field_key, :field_value, NOW())");
@@ -419,15 +585,21 @@ class SqlDataStore implements DataStore {
     }
 
     public function updateBooking(string $id, array $data): bool {
+        $validCols = $this->getTableColumns('bookings');
         $fields = [];
         $params = ['id' => $id];
         foreach ($data as $k => $v) {
             if ($k === 'id') continue;
+            if (!empty($validCols) && !in_array(strtolower($k), $validCols, true)) {
+                continue;
+            }
             $fields[] = "`{$k}` = :{$k}";
             $params[$k] = $v;
         }
-        if (empty($fields)) return false;
-        $fields[] = "`updated_at` = NOW()";
+        if (empty($fields)) return true;
+        if (empty($validCols) || in_array('updated_at', $validCols, true)) {
+            $fields[] = "`updated_at` = NOW()";
+        }
         $sql = "UPDATE bookings SET " . implode(', ', $fields) . " WHERE id = :id";
         return $this->getPdo()->prepare($sql)->execute($params);
     }
