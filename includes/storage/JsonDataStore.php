@@ -330,7 +330,8 @@ class JsonDataStore implements DataStore {
             'status' => $data['status'] ?? 'published', // 'draft', 'published', 'closed'
             'banner' => $data['banner'] ?? '',
             'logo' => $data['logo'] ?? '',
-            'gallery' => is_array($data['gallery'] ?? null) ? $data['gallery'] : [],
+            'gallery' => is_array($data['gallery'] ?? null) ? array_values(array_filter($data['gallery'])) : [],
+            'show_gallery' => !empty($data['show_gallery']) ? 1 : 0,
             'start_date' => $data['start_date'] ?? date('Y-m-d'),
             'start_time' => $data['start_time'] ?? '19:00',
             'end_date' => $data['end_date'] ?? ($data['start_date'] ?? date('Y-m-d')),

@@ -92,6 +92,50 @@ function generateId(string $prefix = ''): string {
     return ($prefix ? $prefix . '_' : '') . bin2hex(random_bytes(8)) . '_' . time();
 }
 
+// Gallery Uploads Processor
+function handleGalleryUploads(?array $files): array {
+    $uploadedUrls = [];
+    if (empty($files) || !isset($files['name']) || !is_array($files['name'])) {
+        return $uploadedUrls;
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/gallery';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+    }
+
+    $count = count($files['name']);
+    $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    for ($i = 0; $i < $count; $i++) {
+        if (!isset($files['error'][$i]) || $files['error'][$i] !== UPLOAD_ERR_OK) {
+            continue;
+        }
+
+        $tmpName = $files['tmp_name'][$i];
+        $originalName = $files['name'][$i];
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowedExts)) {
+            continue;
+        }
+
+        $mime = @mime_content_type($tmpName);
+        if ($mime && !str_starts_with($mime, 'image/')) {
+            continue;
+        }
+
+        $newFileName = 'gal_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $destPath = $uploadDir . '/' . $newFileName;
+
+        if (move_uploaded_file($tmpName, $destPath)) {
+            $uploadedUrls[] = '/uploads/gallery/' . $newFileName;
+        }
+    }
+
+    return $uploadedUrls;
+}
+
 // Date Formatting Helpers
 function renderRichText(?string $content): string {
     if (empty($content)) return '';

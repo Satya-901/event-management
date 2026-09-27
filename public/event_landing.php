@@ -372,16 +372,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <?php endif; ?>
 
     <!-- 5. GALLERY SECTION -->
-    <?php if (!empty($event['gallery'])): ?>
-    <section class="mb-5">
+    <?php 
+    $galleryList = is_array($event['gallery'] ?? null) ? array_values(array_filter($event['gallery'])) : [];
+    $showGallery = !empty($event['show_gallery']) && !empty($galleryList);
+    ?>
+    <?php if ($showGallery): ?>
+    <section class="mb-5" id="gallerySection">
         <div class="text-center mb-4">
             <span class="text-uppercase fw-bold small text-warning">Visual Memories</span>
             <h2 class="section-title">Celebration Gallery</h2>
+            <p class="text-muted small">Moments and memories captured from our celebrations.</p>
         </div>
         <div class="row g-3">
-            <?php foreach ($event['gallery'] as $imgUrl): ?>
+            <?php foreach ($galleryList as $imgUrl): ?>
                 <div class="col-6 col-md-3">
-                    <img src="<?= e($imgUrl) ?>" alt="Gallery" class="img-fluid rounded-3 shadow-sm" style="height:180px; width:100%; object-fit:cover;">
+                    <div class="rounded-3 overflow-hidden shadow-sm position-relative" style="height:200px; background:#f5f5f4;">
+                        <img src="<?= e($imgUrl) ?>" alt="Gallery" class="img-fluid w-100 h-100" style="object-fit:cover; transition:transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>

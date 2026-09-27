@@ -47,6 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // Process Gallery uploads and URLs
+            $uploadedGallery = handleGalleryUploads($_FILES['gallery_files'] ?? null);
+            $urlGallery = [];
+            if (!empty($_POST['gallery_urls']) && is_array($_POST['gallery_urls'])) {
+                foreach ($_POST['gallery_urls'] as $gUrl) {
+                    $gUrl = trim($gUrl);
+                    if (!empty($gUrl)) {
+                        $urlGallery[] = $gUrl;
+                    }
+                }
+            }
+            $finalGallery = array_values(array_unique(array_filter(array_merge($uploadedGallery, $urlGallery))));
+            $showGallery = isset($_POST['show_gallery']) ? 1 : 0;
+
             // If no packages submitted, create default package
             if (empty($packages)) {
                 $basePrice = max(0, (float)($_POST['price_amount'] ?? 0));
@@ -88,6 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'price_label' => $primaryLabel,
                 'price_amount' => $primaryPrice,
                 'packages' => $packages,
+                'gallery' => $finalGallery,
+                'show_gallery' => $showGallery,
                 'booking_open' => isset($_POST['booking_open']) ? 1 : 0,
                 'status' => 'published'
             ], $currentUser);
@@ -118,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 <?php endif; ?>
 
-<form method="POST" action="/client/events/create" id="eventForm" class="card p-3 p-md-4 shadow-xs">
+<form method="POST" action="/client/events/create" id="eventForm" enctype="multipart/form-data" class="card p-3 p-md-4 shadow-xs">
     <?= csrfInput() ?>
 
     <div class="row g-3">
@@ -191,6 +207,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="col-12">
             <label class="form-label small fw-semibold text-secondary">Venue Full Street Address</label>
             <input type="text" name="address" class="form-control" placeholder="Door #, Street, Locality" value="<?= e($_POST['address'] ?? '') ?>">
+        </div>
+
+        <!-- Photo Gallery Showcase Section -->
+        <div class="col-12 border-bottom pt-4 pb-2 mb-2">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i data-lucide="image" class="text-warning" style="width:18px;height:18px;"></i> Photo Gallery Showcase
+                    </h6>
+                    <p class="text-muted text-xs mb-0 mt-0.5" style="font-size:12px;">Display memorable photos and visual celebration memories on the public landing page.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card p-3 border bg-light bg-opacity-40 rounded-3 shadow-xs">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="show_gallery" id="showGallerySwitch" value="1" <?= isset($_POST['show_gallery']) ? 'checked' : '' ?> onchange="toggleGalleryDisplay(this.checked)">
+                    <label class="form-check-label fw-bold text-dark small" for="showGallerySwitch">
+                        Show Gallery on Public Event Page
+                    </label>
+                    <div class="text-muted text-xs">Enable this option and upload/add photos to show the visual gallery on the attendee landing page.</div>
+                </div>
+
+                <div id="galleryContentArea" style="<?= isset($_POST['show_gallery']) ? '' : 'display:none;' ?>">
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-pills nav-fill mb-3 bg-white p-1 border rounded-3" id="galleryTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active small py-1.5 fw-semibold d-flex align-items-center justify-content-center gap-1.5" id="upload-tab" data-bs-toggle="pill" data-bs-target="#tab-upload" type="button" role="tab">
+                                <i data-lucide="upload" style="width:14px;height:14px;"></i> Upload Images from Device
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link small py-1.5 fw-semibold d-flex align-items-center justify-content-center gap-1.5" id="url-tab" data-bs-toggle="pill" data-bs-target="#tab-url" type="button" role="tab">
+                                <i data-lucide="link" style="width:14px;height:14px;"></i> Add Image Web URLs
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="galleryTabsContent">
+                        <!-- Tab 1: File Upload -->
+                        <div class="tab-pane fade show active" id="tab-upload" role="tabpanel">
+                            <div class="p-3.5 border-2 border-dashed rounded-3 text-center bg-white" style="border-color: #cbd5e1 !important;">
+                                <i data-lucide="upload-cloud" class="text-warning mb-2" style="width:36px;height:36px;"></i>
+                                <div class="fw-semibold text-dark small mb-1">Select photo files to upload</div>
+                                <div class="text-muted text-xs mb-3">Supports JPG, PNG, WEBP, and GIF (Multiple photos allowed)</div>
+                                <input type="file" name="gallery_files[]" id="galleryFileInput" class="form-control form-control-sm mx-auto" style="max-width:380px;" multiple accept="image/*" onchange="previewGalleryUploads(this)">
+                            </div>
+                            <div id="galleryPreviewContainer" class="row g-2 mt-2"></div>
+                        </div>
+
+                        <!-- Tab 2: URL Inputs -->
+                        <div class="tab-pane fade" id="tab-url" role="tabpanel">
+                            <div id="galleryUrlInputs" class="d-flex flex-column gap-2">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i data-lucide="image" style="width:14px;height:14px;"></i></span>
+                                    <input type="url" name="gallery_urls[]" class="form-control" placeholder="https://images.unsplash.com/photo-...">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeUrlInput(this)"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2 d-inline-flex align-items-center gap-1 text-xs" onclick="addUrlInput()">
+                                <i data-lucide="plus" style="width:13px;height:13px;"></i> Add Another Image URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Dynamic Packages Builder -->
@@ -468,6 +551,61 @@ function removePackage(btn) {
 document.querySelectorAll('.pkg-cap-input').forEach(input => {
     input.addEventListener('input', updatePackageSummary);
 });
+
+// Gallery Functions
+function toggleGalleryDisplay(checked) {
+    const area = document.getElementById('galleryContentArea');
+    if (area) {
+        area.style.display = checked ? 'block' : 'none';
+    }
+}
+
+function previewGalleryUploads(input) {
+    const container = document.getElementById('galleryPreviewContainer');
+    container.innerHTML = '';
+    if (!input.files || input.files.length === 0) return;
+
+    Array.from(input.files).forEach((file, i) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const col = document.createElement('div');
+            col.className = 'col-4 col-md-3 col-lg-2';
+            col.innerHTML = `
+                <div class="card h-100 border rounded-3 overflow-hidden shadow-xs position-relative">
+                    <img src="${e.target.result}" class="img-fluid" style="height:85px; width:100%; object-fit:cover;">
+                    <div class="p-1 text-center bg-white">
+                        <span class="text-truncate text-muted d-block" style="font-size:10px;">${file.name}</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(col);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function addUrlInput() {
+    const container = document.getElementById('galleryUrlInputs');
+    const div = document.createElement('div');
+    div.className = 'input-group input-group-sm mt-1';
+    div.innerHTML = `
+        <span class="input-group-text"><i data-lucide="image" style="width:14px;height:14px;"></i></span>
+        <input type="url" name="gallery_urls[]" class="form-control" placeholder="https://images.unsplash.com/photo-...">
+        <button type="button" class="btn btn-outline-danger" onclick="removeUrlInput(this)"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+    `;
+    container.appendChild(div);
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function removeUrlInput(btn) {
+    const group = btn.closest('.input-group');
+    if (document.querySelectorAll('#galleryUrlInputs .input-group').length > 1) {
+        group.remove();
+    } else {
+        group.querySelector('input').value = '';
+    }
+}
 </script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
