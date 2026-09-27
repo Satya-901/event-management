@@ -10,5 +10,17 @@
         "status": "active",
         "created_at": "2026-09-21 00:00:00",
         "updated_at": "2026-09-21 00:00:00"
+    },
+    {
+        "id": "usr_29b8d8b60ae443f5_1790507470",
+        "client_id": "client_99418cb5d8db3390_1790507470",
+        "name": "AK Events Admin",
+        "username": "akevents",
+        "email": "admin@akevents.com",
+        "password": "$2y$10$9tIGk5O8Q7zTHmpFVdXvcOH7BukgWugWfysKxrBrZCs.BTk1aHgwm",
+        "role": "client",
+        "status": "active",
+        "created_at": "2026-09-27 11:11:10",
+        "updated_at": "2026-09-27 11:11:10"
     }
 ]

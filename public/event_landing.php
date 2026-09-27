@@ -1,7 +1,7 @@
 <?php
 /**
- * Utsavam - Premium Event Landing Page (12 Sections)
- * Responsive Indian festive theme with dynamic custom booking form.
+ * Utsavam - Modern Premium Event Page
+ * Designed exactly to match modern Indian festival & event ticketing reference.
  */
 
 require_once __DIR__ . '/../includes/config.php';
@@ -96,685 +96,968 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 }
+
+// Calculate starting price
+$packages = $event['packages'] ?? [];
+$startingPrice = (float)($event['price_amount'] ?? 0);
+if (!empty($packages) && is_array($packages)) {
+    $prices = array_map(fn($p) => (float)($p['price'] ?? 0), $packages);
+    if (!empty($prices)) {
+        $startingPrice = min($prices);
+    }
+}
+
+// Formatted Date & Time Strings
+$startDateRaw = strtotime($event['start_date'] ?? date('Y-m-d'));
+$formattedDate = date('D d M Y', $startDateRaw); // e.g. Sun 18 Oct 2026
+$startTimeFormatted = date('g:i A', strtotime($event['start_time'] ?? '18:00'));
+$endTimeFormatted = date('g:i A', strtotime($event['end_time'] ?? '23:00'));
+$timeRangeString = "{$startTimeFormatted} – {$endTimeFormatted}";
+
+// Venue Full Address
+$venueAddressParts = array_filter([
+    $event['venue_name'] ?? '',
+    $event['address'] ?? '',
+    $event['city'] ?? '',
+    $event['state'] ?? '',
+    $event['pincode'] ?? ''
+]);
+$fullVenueAddress = implode(', ', $venueAddressParts);
+
+// Fallback Coordinates for Map (Gorakhpur / Venue default)
+$mapLat = 26.7915;
+$mapLng = 83.3985;
+if (strpos(strtolower($fullVenueAddress), 'lucknow') !== false) {
+    $mapLat = 26.8467; $mapLng = 80.9462;
+} elseif (strpos(strtolower($fullVenueAddress), 'delhi') !== false) {
+    $mapLat = 28.6139; $mapLng = 77.2090;
+} elseif (strpos(strtolower($fullVenueAddress), 'bangalore') !== false || strpos(strtolower($fullVenueAddress), 'bengaluru') !== false) {
+    $mapLat = 12.9716; $mapLng = 77.5946;
+} elseif (strpos(strtolower($fullVenueAddress), 'mumbai') !== false) {
+    $mapLat = 19.0760; $mapLng = 72.8777;
+}
+
+$googleMapsDirectionsUrl = !empty($event['google_maps_url']) 
+    ? $event['google_maps_url'] 
+    : 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($fullVenueAddress);
+
+$bannerUrl = !empty($event['banner']) ? $event['banner'] : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=85';
+$currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($event['meta_title'] ?: $event['name'] . ' | ' . ($client['name'] ?? '')) ?></title>
-    <meta name="description" content="<?= e($event['meta_description'] ?: $event['short_description']) ?>">
-    <meta property="og:title" content="<?= e($event['meta_title'] ?: $event['name']) ?>">
-    <meta property="og:description" content="<?= e($event['meta_description'] ?: $event['short_description']) ?>">
-    <meta property="og:image" content="<?= e($event['og_image'] ?: $event['banner']) ?>">
+    <title><?= e($event['name']) ?> | <?= e($client['company_name'] ?? $client['name']) ?></title>
+    <meta name="description" content="<?= e($event['short_description'] ?? $event['name']) ?>">
+    <meta property="og:title" content="<?= e($event['name']) ?>">
+    <meta property="og:description" content="<?= e($event['short_description'] ?? '') ?>">
+    <meta property="og:image" content="<?= e($bannerUrl) ?>">
+    <meta property="og:url" content="<?= e($currentUrl) ?>">
 
+    <!-- Bootstrap 5 & Lucide Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
         :root {
-            --brand-primary: #c2410c;
-            --brand-dark: #7c2d12;
-            --brand-gold: #d97706;
-            --brand-cream: #fffaf5;
+            --brand-red: #dc2626;
+            --brand-red-hover: #b91c1c;
+            --text-dark: #111827;
+            --text-muted: #6b7280;
+            --card-border: #e5e7eb;
+            --bg-page: #ffffff;
+            --bg-subtle: #f9fafb;
         }
+
         body {
-            background-color: var(--brand-cream);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #292524;
-            scroll-behavior: smooth;
+            background-color: var(--bg-page);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #374151;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
-        /* Navbar */
-        .festive-nav {
+
+        /* Top Brand Navbar */
+        .site-header {
             background: #ffffff;
-            border-bottom: 1px solid #fed7aa;
+            border-bottom: 1px solid var(--card-border);
             position: sticky;
             top: 0;
-            z-index: 1030;
+            z-index: 1020;
         }
-        /* 1. Hero Section */
-        .event-hero {
-            position: relative;
-            background: linear-gradient(rgba(124, 45, 18, 0.85), rgba(194, 65, 12, 0.8)), url('<?= e($event['banner'] ?: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80') ?>');
-            background-size: cover;
-            background-position: center;
-            color: #ffffff;
-            padding: 90px 0 70px;
-        }
-        .hero-badge {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(4px);
-            padding: 6px 16px;
-            border-radius: 9999px;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        /* Cards & Accents */
-        .section-title {
+
+        /* Event Header */
+        .event-main-title {
+            font-size: 2.25rem;
             font-weight: 800;
-            color: #431407;
+            color: var(--text-dark);
             letter-spacing: -0.5px;
+            line-height: 1.25;
         }
-        .info-pill-card {
-            background: #ffffff;
-            border: 1px solid #ffedd5;
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(194, 65, 12, 0.04);
-            height: 100%;
+        @media (max-width: 768px) {
+            .event-main-title {
+                font-size: 1.75rem;
+            }
         }
-        .highlight-item {
+
+        .event-datetime-highlight {
+            color: var(--brand-red);
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .event-venue-highlight {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        /* Hero Banner Image */
+        .event-banner-box {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--card-border);
+            background: #000;
+        }
+        .event-banner-img {
+            width: 100%;
+            height: auto;
+            max-height: 520px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Section Headings */
+        .section-heading {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.2px;
+        }
+
+        /* Expandable About text */
+        .about-text-content {
+            color: #4b5563;
+            font-size: 0.98rem;
+            line-height: 1.68;
+        }
+        .show-more-link {
+            color: var(--brand-red);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 6px;
+        }
+        .show-more-link:hover {
+            color: var(--brand-red-hover);
+            text-decoration: underline;
+        }
+
+        /* Collapsible Policy Cards (General Terms & Cancellation) */
+        .policy-card {
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
             background: #ffffff;
-            border-left: 4px solid #ea580c;
-            border-radius: 0 12px 12px 0;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
+        }
+        .policy-card-btn {
+            background: none;
+            border: none;
             padding: 16px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+            cursor: pointer;
+            text-decoration: none;
         }
-        .booking-card {
+        .policy-card-btn:focus {
+            outline: none;
+        }
+        .policy-card-btn .policy-title {
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .policy-chevron {
+            transition: transform 0.25s ease;
+            color: #9ca3af;
+        }
+        .policy-card-btn:not(.collapsed) .policy-chevron {
+            transform: rotate(180deg);
+        }
+        .policy-content-body {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid #f3f4f6;
+            color: #4b5563;
+            font-size: 0.93rem;
+            line-height: 1.65;
+        }
+
+        /* Right Column Cards */
+        .specs-card {
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
             background: #ffffff;
-            border: 2px solid #fed7aa;
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow: 0 10px 30px rgba(194, 65, 12, 0.08);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         }
-        .btn-brand {
-            background: #c2410c;
+        .specs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px 16px;
+            padding: 24px;
+        }
+        @media (max-width: 480px) {
+            .specs-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+        .spec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .spec-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: #fee2e2;
+            color: var(--brand-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .spec-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .spec-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.3;
+        }
+
+        /* Red CTA Bar */
+        .specs-cta-bar {
+            background-color: var(--brand-red);
+            padding: 16px 22px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .cta-price-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+        .cta-price-amount {
+            font-size: 1.28rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+        .cta-book-btn {
+            background: transparent;
             color: #ffffff;
             border: none;
+            font-weight: 800;
+            font-size: 0.98rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
             border-radius: 8px;
-            padding: 12px 24px;
-            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
             transition: all 0.2s;
         }
-        .btn-brand:hover {
-            background: #9a3412;
+        .cta-book-btn:hover {
             color: #ffffff;
-            transform: translateY(-1px);
+            background: rgba(0, 0, 0, 0.12);
         }
-        .faq-item .accordion-button:not(.collapsed) {
-            background-color: #fff7ed;
-            color: #9a3412;
+        .cta-arrow-circle {
+            width: 26px;
+            height: 26px;
+            background: #ffffff;
+            color: var(--brand-red);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        /* Rich Text Styling from CKEditor */
-        .rich-text-content {
-            color: #44403c;
-            line-height: 1.7;
+
+        /* Venue Map Card */
+        .venue-map-card {
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            background: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            margin-top: 24px;
         }
-        .rich-text-content h1, .rich-text-content h2, .rich-text-content h3, .rich-text-content h4 {
-            font-weight: 700;
-            color: #431407;
-            margin-top: 1.25rem;
-            margin-bottom: 0.75rem;
-        }
-        .rich-text-content p {
-            margin-bottom: 0.85rem;
-        }
-        .rich-text-content ul, .rich-text-content ol {
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .rich-text-content li {
-            margin-bottom: 0.35rem;
-        }
-        .rich-text-content table {
+        #eventMap {
+            height: 210px;
             width: 100%;
-            margin-bottom: 1rem;
-            border-collapse: collapse;
+            background-color: #f3f4f6;
+            z-index: 1;
         }
-        .rich-text-content th, .rich-text-content td {
-            border: 1px solid #fed7aa;
-            padding: 8px 12px;
+        .venue-info-bar {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: #ffffff;
         }
-        .rich-text-content blockquote {
-            border-left: 4px solid #ea580c;
-            padding-left: 1rem;
-            color: #78350f;
-            font-style: italic;
-            margin: 1rem 0;
+        .venue-address-text {
+            font-size: 0.88rem;
+            color: #4b5563;
+            line-height: 1.4;
+            font-weight: 500;
         }
-        .package-selection-card {
-            transition: all 0.25s ease-in-out;
+        .btn-directions {
+            color: var(--brand-red);
+            font-weight: 700;
+            font-size: 0.92rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .btn-directions:hover {
+            color: var(--brand-red-hover);
+        }
+        .directions-circle-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--brand-red);
+            color: #ffffff;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Share Card */
+        .share-card {
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 14px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            margin-top: 20px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .package-selection-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 28px rgba(194, 65, 12, 0.12) !important;
-            border-color: #ea580c !important;
+        .share-card:hover {
+            border-color: #cbd5e1;
+            background: #fafafa;
+        }
+        .share-card-text {
+            color: var(--brand-red);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        /* Ticket Package Card in Modal */
+        .ticket-pkg-card {
+            border: 2px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .ticket-pkg-card:hover {
+            border-color: #fca5a5;
+            background-color: #fffaf0;
+        }
+        .ticket-pkg-card.active {
+            border-color: var(--brand-red);
+            background-color: #fef2f2;
         }
     </style>
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg festive-nav py-3">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="/<?= e($client['slug']) ?>/">
-            <span class="badge bg-warning text-dark p-2 rounded-circle"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></span>
-            <span class="fw-bold text-dark fs-5"><?= e($client['name']) ?></span>
+<!-- Top Minimal Navbar -->
+<header class="site-header py-2.5">
+    <div class="container d-flex align-items-center justify-content-between">
+        <a href="/<?= e($client['slug']) ?>/" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
+            <?php if (!empty($client['logo'])): ?>
+                <img src="<?= e($client['logo']) ?>" alt="<?= e($client['name']) ?>" style="height:32px;border-radius:4px;">
+            <?php else: ?>
+                <div class="bg-danger text-white fw-bold rounded-2 px-2 py-1 small"><?= strtoupper(substr($client['name'] ?? 'AK', 0, 2)) ?></div>
+            <?php endif; ?>
+            <span class="fw-bold fs-6 text-dark"><?= e($client['name']) ?></span>
         </a>
-        <div class="d-flex align-items-center gap-3">
-            <a href="#bookingSection" class="btn btn-brand btn-sm d-inline-flex align-items-center gap-2">
-                <i data-lucide="ticket" style="width:16px;height:16px;"></i> Book Passes
-            </a>
-        </div>
-    </div>
-</nav>
-
-<!-- 1. HERO SECTION -->
-<header class="event-hero">
-    <div class="container text-center">
-        <div class="hero-badge mb-3">
-            <i data-lucide="sparkles" style="width:14px;height:14px;"></i> <?= e($event['category']) ?> • Organized by <?= e($client['company_name'] ?? $client['name']) ?>
-        </div>
-        <h1 class="display-4 fw-bold mb-3"><?= e($event['name']) ?></h1>
-        <p class="lead opacity-90 mx-auto mb-4" style="max-width: 750px;">
-            <?= e($event['short_description']) ?>
-        </p>
-        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
-            <div class="badge bg-black bg-opacity-30 px-3 py-2 fs-6 fw-normal d-inline-flex align-items-center gap-2">
-                <i data-lucide="calendar" style="width:18px;height:18px;"></i> <?= formatDate($event['start_date']) ?>
-            </div>
-            <div class="badge bg-black bg-opacity-30 px-3 py-2 fs-6 fw-normal d-inline-flex align-items-center gap-2">
-                <i data-lucide="clock" style="width:18px;height:18px;"></i> <?= formatTime($event['start_time']) ?> onwards
-            </div>
-            <div class="badge bg-black bg-opacity-30 px-3 py-2 fs-6 fw-normal d-inline-flex align-items-center gap-2">
-                <i data-lucide="map-pin" style="width:18px;height:18px;"></i> <?= e($event['venue_name']) ?>, <?= e($event['city']) ?>
-            </div>
-        </div>
-        <div>
-            <a href="#bookingSection" class="btn btn-warning btn-lg px-4 py-3 fw-bold text-dark shadow-sm">
-                Reserve Your Passes Now <i data-lucide="chevron-right" style="width:18px;height:18px;"></i>
-            </a>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/<?= e($client['slug']) ?>/" class="btn btn-sm btn-outline-secondary d-none d-sm-inline-flex">All Events</a>
+            <button type="button" class="btn btn-sm btn-danger fw-semibold px-3 shadow-xs" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                Book Tickets
+            </button>
         </div>
     </div>
 </header>
 
-<main class="container py-5">
+<main class="container py-4 py-md-5">
+
+    <!-- Flash Error Message if any -->
     <?php if ($error): ?>
-        <div class="alert alert-danger shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
-            <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i>
+        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2 shadow-xs">
+            <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
             <span><?= e($error) ?></span>
         </div>
     <?php endif; ?>
 
-    <!-- 2. EVENT INFORMATION CARDS -->
-    <section class="mb-5">
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="info-pill-card text-center">
-                    <div class="text-warning mb-2"><i data-lucide="calendar-check" style="width:32px;height:32px;"></i></div>
-                    <h5 class="fw-bold mb-1">Date & Time</h5>
-                    <p class="text-muted small mb-0"><?= formatDate($event['start_date']) ?><br><?= formatTime($event['start_time']) ?> to <?= formatTime($event['end_time']) ?></p>
-                </div>
+    <!-- 1. TOP HEADER: Event Title & Red Subtitle Date/Venue (Exact Match to Reference) -->
+    <div class="mb-4">
+        <h1 class="event-main-title mb-2">
+            <?= e($event['name']) ?>
+        </h1>
+        <div class="d-flex flex-wrap align-items-center">
+            <span class="event-datetime-highlight">
+                <?= e($formattedDate) ?>, <?= e($timeRangeString) ?>
+            </span>
+            <span class="text-muted mx-2 d-none d-sm-inline">|</span>
+            <span class="event-venue-highlight d-block d-sm-inline mt-1 mt-sm-0">
+                <?= e($fullVenueAddress) ?>
+            </span>
+        </div>
+    </div>
+
+    <!-- 2. TWO-COLUMN GRID: Banner + About on Left, Meta Specs + Map + Share on Right -->
+    <div class="row g-4 g-lg-5">
+
+        <!-- ================= LEFT COLUMN ================= -->
+        <div class="col-lg-7">
+
+            <!-- Hero Banner Image (Rounded, 16:9, High Impact) -->
+            <div class="event-banner-box mb-4">
+                <img src="<?= e($bannerUrl) ?>" alt="<?= e($event['name']) ?>" class="event-banner-img">
             </div>
-            <div class="col-md-4">
-                <div class="info-pill-card text-center">
-                    <div class="text-danger mb-2"><i data-lucide="map-pin" style="width:32px;height:32px;"></i></div>
-                    <h5 class="fw-bold mb-1">Venue Location</h5>
-                    <p class="text-muted small mb-0"><?= e($event['venue_name']) ?><br><?= e($event['city']) ?>, Karnataka</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="info-pill-card text-center">
-                    <div class="text-success mb-2"><i data-lucide="users" style="width:32px;height:32px;"></i></div>
-                    <h5 class="fw-bold mb-1">Available Passes</h5>
-                    <p class="text-muted small mb-0"><strong><?= (int)($event['available_seats'] ?? 0) ?></strong> seats remaining<br><span class="badge bg-success bg-opacity-10 text-success">Instant QR Pass</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- 3. ABOUT SECTION -->
-    <section class="mb-5">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-7">
-                <span class="text-uppercase fw-bold small text-warning">About The Celebration</span>
-                <h2 class="section-title mb-3">Immerse Yourself in Joy and Rhythm</h2>
-                <div class="rich-text-content text-secondary fs-6 lh-base mb-4">
-                    <?= renderRichText($event['full_description'] ?: $event['short_description']) ?>
-                </div>
-                <div class="d-flex gap-3">
-                    <div class="d-flex align-items-center gap-2 small text-dark fw-medium">
-                        <i data-lucide="shield-check" class="text-success" style="width:18px;height:18px;"></i> Official Verified Host
+            <!-- "About the Event" Section with Show More / Show Less Toggle -->
+            <div class="mb-4 pt-1">
+                <h2 class="section-heading mb-3">About the Event</h2>
+                
+                <?php
+                $fullAbout = !empty($event['full_description']) ? $event['full_description'] : $event['short_description'];
+                $cleanPlain = strip_tags($fullAbout);
+                $isLong = mb_strlen($cleanPlain) > 230;
+                $truncatedText = $isLong ? mb_substr($cleanPlain, 0, 230) . '...' : $cleanPlain;
+                ?>
+
+                <div class="about-text-content">
+                    <div id="aboutCollapsedText" class="<?= $isLong ? '' : 'd-none' ?>">
+                        <?= nl2br(e($truncatedText)) ?>
                     </div>
-                    <div class="d-flex align-items-center gap-2 small text-dark fw-medium">
-                        <i data-lucide="award" class="text-warning" style="width:18px;height:18px;"></i> Traditional Folk Music
+                    <div id="aboutFullText" class="<?= $isLong ? 'd-none' : '' ?>">
+                        <?= renderRichText($fullAbout) ?>
                     </div>
-                </div>
-            </div>
-            <div class="col-lg-5">
-                <img src="<?= e($event['banner']) ?>" alt="<?= e($event['name']) ?>" class="img-fluid rounded-4 shadow-sm" style="max-height:380px; width:100%; object-fit:cover;">
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. HIGHLIGHTS SECTION -->
-    <?php if (!empty($event['highlights'])): ?>
-    <section class="mb-5">
-        <div class="text-center mb-4">
-            <span class="text-uppercase fw-bold small text-warning">Event Attractions</span>
-            <h2 class="section-title">Key Highlights</h2>
-        </div>
-        <div class="row g-3">
-            <?php foreach ($event['highlights'] as $highlight): ?>
-                <div class="col-md-6">
-                    <div class="highlight-item d-flex align-items-center gap-3">
-                        <i data-lucide="sparkle" class="text-warning flex-shrink-0" style="width:20px;height:20px;"></i>
-                        <span class="fw-medium text-dark"><?= e($highlight) ?></span>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- 5. GALLERY SECTION -->
-    <?php 
-    $galleryList = is_array($event['gallery'] ?? null) ? array_values(array_filter($event['gallery'])) : [];
-    $showGallery = !empty($event['show_gallery']) && !empty($galleryList);
-    ?>
-    <?php if ($showGallery): ?>
-    <section class="mb-5" id="gallerySection">
-        <div class="text-center mb-4">
-            <span class="text-uppercase fw-bold small text-warning">Visual Memories</span>
-            <h2 class="section-title">Celebration Gallery</h2>
-            <p class="text-muted small">Moments and memories captured from our celebrations.</p>
-        </div>
-        <div class="row g-3">
-            <?php foreach ($galleryList as $imgUrl): ?>
-                <div class="col-6 col-md-3">
-                    <div class="rounded-3 overflow-hidden shadow-sm position-relative" style="height:200px; background:#f5f5f4;">
-                        <img src="<?= e($imgUrl) ?>" alt="Gallery" class="img-fluid w-100 h-100" style="object-fit:cover; transition:transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- 6. PACKAGES & TICKETING TIERS -->
-    <?php if (!empty($event['packages']) && is_array($event['packages'])): ?>
-    <section class="mb-5" id="packagesSection">
-        <div class="text-center mb-4">
-            <span class="text-uppercase fw-bold small text-warning">Pass Options & Pricing</span>
-            <h2 class="section-title">Select Your Pass Package</h2>
-            <p class="text-muted small">Choose the ticket tier that best matches your celebration plans.</p>
-        </div>
-        <div class="row g-3 justify-content-center">
-            <?php foreach ($event['packages'] as $pIdx => $pkg): ?>
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 p-4 border rounded-4 shadow-sm bg-white position-relative package-selection-card <?= !empty($pkg['badge']) ? 'border-warning border-2' : '' ?>" onclick="selectPackageForBooking('<?= e($pkg['id']) ?>')">
-                        <?php if (!empty($pkg['badge'])): ?>
-                            <span class="position-absolute top-0 end-0 translate-middle-y me-3 badge bg-warning text-dark px-3 py-1 shadow-xs fw-bold rounded-pill text-xs">
-                                <?= e($pkg['badge']) ?>
-                            </span>
-                        <?php endif; ?>
-                        <div class="mb-2">
-                            <h5 class="fw-bold text-dark mb-1"><?= e($pkg['name']) ?></h5>
-                            <div class="fs-3 fw-bold text-danger">
-                                <?= (float)$pkg['price'] > 0 ? '₹' . number_format($pkg['price'], 2) : 'Free Entry' ?>
-                            </div>
-                            <div class="text-muted text-xs">Per pass • Instant Digital Ticket</div>
-                        </div>
-                        <?php if (!empty($pkg['description'])): ?>
-                            <p class="small text-muted mb-3 flex-grow-1 border-top pt-2">
-                                <i data-lucide="check-circle" class="text-success me-1" style="width:14px;height:14px;vertical-align:-2px;"></i>
-                                <?= e($pkg['description']) ?>
-                            </p>
-                        <?php endif; ?>
-                        <button type="button" class="btn btn-outline-warning text-dark w-100 fw-bold py-2 mt-auto shadow-xs" onclick="selectPackageForBooking('<?= e($pkg['id']) ?>')">
-                            Book This Package &rarr;
-                        </button>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- 7. PASS / PRICING & DYNAMIC BOOKING FORM -->
-    <section class="mb-5" id="bookingSection">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="booking-card">
-                    <div class="text-center mb-4">
-                        <span class="badge bg-warning text-dark px-3 py-1 mb-2">Fast Online Reservation</span>
-                        <h2 class="section-title mb-1">Book Your Event Passes</h2>
-                        <p class="text-muted small">Fill out the attendee details below. Instant digital QR pass issued upon submission.</p>
-                        <div class="d-inline-block bg-light px-4 py-2 rounded-pill mt-2">
-                            <span class="text-muted small">Starting Price: </span>
-                            <span class="fw-bold text-dark fs-5">
-                                <?= (float)($event['price_amount'] ?? 0) > 0 ? '₹' . number_format($event['price_amount'], 2) : 'Free Entry' ?>
-                            </span>
-                            <span class="text-muted small"> / <?= e($event['price_label'] ?: 'Person') ?></span>
-                        </div>
-                    </div>
-
-                    <?php if (empty($event['booking_open'])): ?>
-                        <div class="alert alert-warning text-center">
-                            <i data-lucide="lock" style="width:24px;height:24px;"></i>
-                            <div class="fw-bold mt-2">Bookings are currently closed for this event.</div>
-                        </div>
-                    <?php elseif (($event['available_seats'] ?? 0) <= 0): ?>
-                        <div class="alert alert-danger text-center">
-                            <i data-lucide="users" style="width:24px;height:24px;"></i>
-                            <div class="fw-bold mt-2">Housefull! All passes have been reserved.</div>
-                        </div>
-                    <?php else: ?>
-                        <form method="POST" action="#bookingSection">
-                            <?= csrfInput() ?>
-                            <input type="hidden" name="action" value="book_event">
-
-                            <div class="row g-3">
-                                <?php if (!empty($event['packages']) && is_array($event['packages'])): ?>
-                                    <div class="col-12">
-                                        <label class="form-label small fw-semibold">Select Pass Package <span class="text-danger">*</span></label>
-                                        <select name="package_id" id="bookingPackageSelect" class="form-select form-select-lg" onchange="calculateBookingTotal()">
-                                            <?php foreach ($event['packages'] as $pkg): ?>
-                                                <option value="<?= e($pkg['id']) ?>" data-price="<?= (float)$pkg['price'] ?>" data-name="<?= e($pkg['name']) ?>">
-                                                    <?= e($pkg['name']) ?> — <?= (float)$pkg['price'] > 0 ? '₹' . number_format($pkg['price'], 2) : 'Free Entry' ?> <?= !empty($pkg['badge']) ? '★ ' . e($pkg['badge']) : '' ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                <?php endif; ?>
-
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Your Full Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="customer_name" required class="form-control" placeholder="Enter your full name" value="<?= e($_POST['customer_name'] ?? '') ?>">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
-                                    <input type="email" name="email" required class="form-control" placeholder="Enter your email address" value="<?= e($_POST['email'] ?? '') ?>">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Phone / WhatsApp <span class="text-danger">*</span></label>
-                                    <input type="tel" name="phone" required class="form-control" placeholder="Enter your phone number" value="<?= e($_POST['phone'] ?? '') ?>">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Number of Passes <span class="text-danger">*</span></label>
-                                    <select name="pass_count" id="passCountSelect" class="form-select" onchange="calculateBookingTotal()">
-                                        <?php for ($i = 1; $i <= min(10, $event['available_seats']); $i++): ?>
-                                            <option value="<?= $i ?>" <?= (isset($_POST['pass_count']) && (int)$_POST['pass_count'] === $i) ? 'selected' : '' ?>>
-                                                <?= $i ?> <?= $i === 1 ? 'Pass' : 'Passes' ?>
-                                            </option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-
-                                <!-- Dynamic Custom Form Fields Configured by Event Organizer -->
-                                <?php foreach ($formFields as $field): ?>
-                                    <?php 
-                                        $fkey = $field['field_key'];
-                                        // Skip if redundant with core fields
-                                        if (in_array($fkey, ['full_name', 'email_address', 'mobile_number', 'attendees_count'])) continue;
-                                    ?>
-                                    <div class="col-12">
-                                        <label class="form-label small fw-semibold">
-                                            <?= e($field['field_label']) ?>
-                                            <?php if (!empty($field['required'])): ?><span class="text-danger">*</span><?php endif; ?>
-                                        </label>
-                                        <?php if ($field['field_type'] === 'textarea'): ?>
-                                            <textarea name="custom_<?= e($fkey) ?>" class="form-control" rows="2" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>></textarea>
-                                        <?php else: ?>
-                                            <input type="<?= e($field['field_type'] ?: 'text') ?>" name="custom_<?= e($fkey) ?>" class="form-control" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-
-                                <!-- Live Pass Fee Summary Strip -->
-                                <div class="col-12 mt-3">
-                                    <div class="bg-light p-3 rounded-3 border d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <div class="text-muted text-xs">Selected Reservation</div>
-                                            <div class="fw-bold text-dark small" id="summaryText">1 × Pass</div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="text-muted text-xs">Total Pass Fee</div>
-                                            <div class="fs-5 fw-bold text-danger" id="summaryTotal">₹0.00</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-12 mt-4">
-                                    <button type="submit" class="btn btn-brand w-100 py-3 fs-5 fw-bold d-flex align-items-center justify-content-center gap-2">
-                                        <i data-lucide="qr-code" style="width:22px;height:22px;"></i> Confirm & Generate QR Pass
-                                    </button>
-                                    <div class="text-center text-muted small mt-2">
-                                        <i data-lucide="lock" style="width:12px;height:12px;"></i> Safe & secure booking • Instant entry ticket
-                                    </div>
-                                    <?php if (!empty($client['terms_and_conditions']) || !empty($client['cancellation_policy'])): ?>
-                                        <div class="text-center text-muted mt-2" style="font-size:11.5px;">
-                                            By reserving, you agree to <?= e($client['company_name'] ?? $client['name']) ?>'s
-                                            <?php if (!empty($client['terms_and_conditions'])): ?>
-                                                <a href="#publicTermsModal" data-bs-toggle="modal" class="text-danger fw-semibold text-decoration-underline">Terms & Conditions</a>
-                                            <?php endif; ?>
-                                            <?php if (!empty($client['terms_and_conditions']) && !empty($client['cancellation_policy'])): ?> and <?php endif; ?>
-                                            <?php if (!empty($client['cancellation_policy'])): ?>
-                                                <a href="#publicRefundModal" data-bs-toggle="modal" class="text-danger fw-semibold text-decoration-underline">Cancellation Policy</a>
-                                            <?php endif; ?>.
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </form>
+                    
+                    <?php if ($isLong): ?>
+                        <a href="javascript:void(0)" class="show-more-link" id="btnToggleAbout">Show More</a>
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- 8 & 9. VENUE & GOOGLE MAP SECTION -->
-    <section class="mb-5">
-        <div class="text-center mb-4">
-            <span class="text-uppercase fw-bold small text-warning">Getting There</span>
-            <h2 class="section-title">Venue & Location</h2>
+            <!-- Policy Accordion 1: "General Terms" (Exact match) -->
+            <div class="policy-card mb-3">
+                <button class="policy-card-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#generalTermsCollapse" aria-expanded="false" aria-controls="generalTermsCollapse">
+                    <span class="policy-title">
+                        <i data-lucide="align-left" style="width:18px;height:18px;"></i>
+                        General Terms
+                    </span>
+                    <i data-lucide="chevron-down" class="policy-chevron" style="width:18px;height:18px;"></i>
+                </button>
+                <div class="collapse" id="generalTermsCollapse">
+                    <div class="policy-content-body">
+                        <?php if (!empty($client['terms_and_conditions'])): ?>
+                            <?= renderRichText($client['terms_and_conditions']) ?>
+                        <?php else: ?>
+                            <ul class="mb-0 ps-3">
+                                <li>Every attendee must present a valid digital QR pass generated by Utsavam at the entrance gate.</li>
+                                <li>Entry is subject to security checks and verification of a valid government photo ID.</li>
+                                <li>Traditional festive attire is recommended for Garba and Dandiya dancers.</li>
+                                <li>Outside food, drinks, and hazardous items are strictly prohibited inside the venue.</li>
+                                <li>The organizers reserve the right of admission and security protocol enforcement.</li>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Policy Accordion 2: "Cancellation/Refund Policy" (Exact match) -->
+            <div class="policy-card mb-4">
+                <button class="policy-card-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cancellationPolicyCollapse" aria-expanded="false" aria-controls="cancellationPolicyCollapse">
+                    <span class="policy-title">
+                        <i data-lucide="circle-slash" style="width:18px;height:18px;"></i>
+                        Cancellation/Refund Policy
+                    </span>
+                    <i data-lucide="chevron-down" class="policy-chevron" style="width:18px;height:18px;"></i>
+                </button>
+                <div class="collapse" id="cancellationPolicyCollapse">
+                    <div class="policy-content-body">
+                        <?php if (!empty($client['cancellation_policy'])): ?>
+                            <?= renderRichText($client['cancellation_policy']) ?>
+                        <?php else: ?>
+                            <ul class="mb-0 ps-3">
+                                <li>Tickets and passes once booked are non-refundable and cannot be exchanged for cash.</li>
+                                <li>Pass name transfers may be requested up to 24 hours prior to the event schedule by contacting event support.</li>
+                                <li>If the event is rescheduled due to unforeseen circumstances, existing passes will remain valid for the new date.</li>
+                                <li>In the event of total cancellation by the organizers, a 100% refund will be issued via the original payment mode.</li>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div class="row g-0">
-                <div class="col-lg-5 p-4 d-flex flex-column justify-content-center bg-white">
-                    <h4 class="fw-bold text-dark mb-2"><?= e($event['venue_name']) ?></h4>
-                    <p class="text-muted mb-3"><i data-lucide="map-pin" class="text-danger" style="width:16px;height:16px;"></i> <?= e($event['address']) ?>, <?= e($event['city']) ?>, <?= e($event['pincode'] ?? '560006') ?></p>
-                    <p class="small text-muted mb-4">Palace Grounds offers convenient central access, valet parking, and ample designated vehicle holding areas.</p>
-                    <?php if (!empty($event['google_maps_url'])): ?>
+
+        <!-- ================= RIGHT COLUMN (STICKY SIDEBAR) ================= -->
+        <div class="col-lg-5">
+
+            <!-- Card 1: Event Quick Specs & Attached Red CTA Bar (Exact Match) -->
+            <div class="specs-card mb-4">
+                <!-- Meta Grid (2 columns: Time, Date, Content Type, Language, Category) -->
+                <div class="specs-grid">
+                    
+                    <!-- 1. TIME -->
+                    <div class="spec-item">
+                        <div class="spec-icon-box">
+                            <i data-lucide="clock" style="width:18px;height:18px;"></i>
+                        </div>
                         <div>
-                            <a href="<?= e($event['google_maps_url']) ?>" target="_blank" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2">
-                                <i data-lucide="external-link" style="width:14px;height:14px;"></i> Open in Google Maps
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="col-lg-7">
-                    <!-- Embedded Responsive Map -->
-                    <iframe 
-                        src="https://maps.google.com/maps?q=<?= urlencode($event['venue_name'] . ' ' . $event['city']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" 
-                        width="100%" 
-                        height="320" 
-                        style="border:0;" 
-                        allowfullscreen="" 
-                        loading="lazy">
-                    </iframe>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 10. FAQ SECTION -->
-    <?php if (!empty($event['faqs'])): ?>
-    <section class="mb-5">
-        <div class="text-center mb-4">
-            <span class="text-uppercase fw-bold small text-warning">Got Questions?</span>
-            <h2 class="section-title">Frequently Asked Questions</h2>
-        </div>
-        <div class="accordion faq-item shadow-sm rounded-3 overflow-hidden" id="eventFaqAccordion">
-            <?php foreach ($event['faqs'] as $index => $faq): ?>
-                <div class="accordion-item border-0 border-bottom">
-                    <h2 class="accordion-header" id="heading<?= $index ?>">
-                        <button class="accordion-button <?= $index > 0 ? 'collapsed' : '' ?> fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>">
-                            <?= e($faq['question']) ?>
-                        </button>
-                    </h2>
-                    <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" data-bs-parent="#eventFaqAccordion">
-                        <div class="accordion-body text-muted">
-                            <?= e($faq['answer']) ?>
+                            <div class="spec-label">Time</div>
+                            <div class="spec-value"><?= e($timeRangeString) ?></div>
                         </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
 
-    <!-- 11. CONTACT SECTION -->
-    <section class="mb-5">
-        <div class="bg-white p-4 rounded-4 border shadow-sm">
-            <div class="row align-items-center">
-                <div class="col-md-7">
-                    <h4 class="fw-bold mb-1">Need Assistance with Your Booking?</h4>
-                    <p class="text-muted small mb-0">Our dedicated organizer support desk is ready to answer questions regarding passes, group bookings, or venue directions.</p>
+                    <!-- 2. DATE -->
+                    <div class="spec-item">
+                        <div class="spec-icon-box">
+                            <i data-lucide="calendar" style="width:18px;height:18px;"></i>
+                        </div>
+                        <div>
+                            <div class="spec-label">Date</div>
+                            <div class="spec-value"><?= e($formattedDate) ?></div>
+                        </div>
+                    </div>
+
+                    <!-- 3. CONTENT TYPE -->
+                    <div class="spec-item">
+                        <div class="spec-icon-box">
+                            <i data-lucide="user" style="width:18px;height:18px;"></i>
+                        </div>
+                        <div>
+                            <div class="spec-label">Content Type</div>
+                            <div class="spec-value">Family Friendly</div>
+                        </div>
+                    </div>
+
+                    <!-- 4. LANGUAGE -->
+                    <div class="spec-item">
+                        <div class="spec-icon-box">
+                            <i data-lucide="globe" style="width:18px;height:18px;"></i>
+                        </div>
+                        <div>
+                            <div class="spec-label">Language</div>
+                            <div class="spec-value">Hindi, English</div>
+                        </div>
+                    </div>
+
+                    <!-- 5. CATEGORY -->
+                    <div class="spec-item" style="grid-column: span 2;">
+                        <div class="spec-icon-box">
+                            <i data-lucide="layout-grid" style="width:18px;height:18px;"></i>
+                        </div>
+                        <div>
+                            <div class="spec-label">Category</div>
+                            <div class="spec-value text-uppercase"><?= e($event['category'] ?: 'ENTERTAINMENT') ?></div>
+                        </div>
+                    </div>
+
                 </div>
-                <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                    <a href="tel:<?= e($event['contact_phone'] ?: '+91 98860 12345') ?>" class="btn btn-outline-dark btn-sm me-2">
-                        <i data-lucide="phone" style="width:14px;height:14px;"></i> <?= e($event['contact_phone'] ?: '+91 98860 12345') ?>
-                    </a>
-                    <a href="mailto:<?= e($event['contact_email'] ?: 'contact@utsavam.com') ?>" class="btn btn-outline-secondary btn-sm">
-                        <i data-lucide="mail" style="width:14px;height:14px;"></i> Email
+
+                <!-- Attached Vibrant Red Action Bar -->
+                <div class="specs-cta-bar">
+                    <div>
+                        <div class="cta-price-label">Starting From</div>
+                        <div class="cta-price-amount">
+                            <?= $startingPrice > 0 ? '₹ ' . number_format($startingPrice) . ' ONWARDS' : 'FREE ENTRY' ?>
+                        </div>
+                    </div>
+                    <button type="button" class="cta-book-btn" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                        <span>BOOK TICKETS</span>
+                        <span class="cta-arrow-circle">
+                            <i data-lucide="arrow-right" style="width:15px;height:15px;"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 2: Interactive Leaflet / OpenStreetMap & Venue Directions (Exact Match) -->
+            <div class="venue-map-card">
+                <!-- Map Container rendered by Leaflet -->
+                <div id="eventMap"></div>
+
+                <!-- Venue text & Get Directions button -->
+                <div class="venue-info-bar">
+                    <div class="venue-address-text">
+                        <?= e($fullVenueAddress) ?>
+                    </div>
+                    <a href="<?= e($googleMapsDirectionsUrl) ?>" target="_blank" class="btn-directions">
+                        <span>Get Directions</span>
+                        <span class="directions-circle-icon">
+                            <i data-lucide="arrow-right" style="width:15px;height:15px;"></i>
+                        </span>
                     </a>
                 </div>
             </div>
+
+            <!-- Card 3: Share this Event Card (Exact Match) -->
+            <div class="share-card" id="btnShareCard" title="Share this Event">
+                <span class="share-card-text">Share this Event</span>
+                <i data-lucide="share-2" style="width:18px;height:18px;color:#111827;"></i>
+            </div>
+
         </div>
-    </section>
+    </div>
 </main>
 
-<!-- 12. FOOTER SECTION -->
-<footer class="bg-white border-top py-4">
-    <div class="container text-center text-muted small">
-        <div class="mb-2">
-            <strong><?= e($event['name']) ?></strong> • Presented by <?= e($client['company_name'] ?? $client['name']) ?>
-        </div>
-        <?php if (!empty($client['terms_and_conditions']) || !empty($client['cancellation_policy'])): ?>
-            <div class="d-flex justify-content-center align-items-center gap-3 mb-2 small flex-wrap">
-                <?php if (!empty($client['terms_and_conditions'])): ?>
-                    <a href="#publicTermsModal" data-bs-toggle="modal" class="text-secondary text-decoration-none">
-                        <i data-lucide="file-text" style="width:13px;height:13px;vertical-align:-1px;"></i> Terms & Conditions
-                    </a>
-                <?php endif; ?>
-                <?php if (!empty($client['terms_and_conditions']) && !empty($client['cancellation_policy'])): ?>
-                    <span class="text-muted">•</span>
-                <?php endif; ?>
-                <?php if (!empty($client['cancellation_policy'])): ?>
-                    <a href="#publicRefundModal" data-bs-toggle="modal" class="text-secondary text-decoration-none">
-                        <i data-lucide="refresh-cw" style="width:13px;height:13px;vertical-align:-1px;"></i> Cancellation & Refund Policy
-                    </a>
-                <?php endif; ?>
+<!-- ================= TICKET BOOKING MODAL ================= -->
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            
+            <div class="modal-header border-bottom py-3 px-4 bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="bookingModalLabel">
+                        <i data-lucide="ticket" class="text-danger" style="width:20px;height:20px;"></i>
+                        Book Passes — <?= e($event['name']) ?>
+                    </h5>
+                    <div class="text-muted text-xs"><?= e($formattedDate) ?> • <?= e($timeRangeString) ?></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        <?php endif; ?>
-        <p class="mb-0 text-muted" style="font-size:12px;">Powered by <strong><?= e(APP_NAME) ?></strong> — <?= e(APP_TAGLINE) ?></p>
+
+            <form method="POST" action="<?= e($_SERVER['REQUEST_URI']) ?>" id="eventBookingForm">
+                <?= csrfInput() ?>
+                <input type="hidden" name="action" value="book_event">
+
+                <div class="modal-body p-4">
+                    
+                    <!-- 1. Select Ticket Pass Package -->
+                    <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5">
+                        <i data-lucide="layers" class="text-danger" style="width:16px;height:16px;"></i>
+                        1. Select Pass Category
+                    </h6>
+
+                    <?php if (!empty($packages) && is_array($packages)): ?>
+                        <div class="row g-2 mb-3" id="packageListContainer">
+                            <?php foreach ($packages as $idx => $pkg): ?>
+                                <?php $isSelected = ($idx === 0); ?>
+                                <div class="col-md-6">
+                                    <div class="ticket-pkg-card <?= $isSelected ? 'active' : '' ?>" onclick="selectTicketPackage('<?= e($pkg['id']) ?>', <?= (float)$pkg['price'] ?>, '<?= e(addslashes($pkg['name'])) ?>', this)">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <input type="radio" name="package_id" value="<?= e($pkg['id']) ?>" id="pkg_radio_<?= e($pkg['id']) ?>" class="form-check-input mt-0" <?= $isSelected ? 'checked' : '' ?>>
+                                                <span class="fw-bold text-dark small"><?= e($pkg['name']) ?></span>
+                                            </div>
+                                            <?php if (!empty($pkg['badge'])): ?>
+                                                <span class="badge bg-danger text-white rounded-pill text-xs"><?= e($pkg['badge']) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <span class="text-muted text-xs"><?= e($pkg['description'] ?? 'General Entry') ?></span>
+                                            <span class="fw-bolder fs-6 text-danger">₹ <?= number_format($pkg['price']) ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="ticket-pkg-card active mb-3" onclick="selectTicketPackage('default', <?= (float)$event['price_amount'] ?>, 'Standard Pass', this)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="radio" name="package_id" value="default" class="form-check-input mt-0" checked>
+                                    <span class="fw-bold text-dark">Standard Entry Pass</span>
+                                </div>
+                                <span class="fw-bolder fs-5 text-danger">
+                                    <?= (float)$event['price_amount'] > 0 ? '₹ ' . number_format($event['price_amount']) : 'Free' ?>
+                                </span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- 2. Pass Count -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Number of Passes</label>
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="changePassCount(-1)">-</button>
+                                <input type="number" name="pass_count" id="modalPassCountInput" class="form-control text-center fw-bold" value="1" min="1" max="10" readonly>
+                                <button type="button" class="btn btn-outline-secondary" onclick="changePassCount(1)">+</button>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-secondary">Pass Summary</label>
+                            <div class="p-2 border rounded-2 bg-light d-flex justify-content-between align-items-center" style="height:38px;">
+                                <span class="small text-muted" id="modalSelectedPkgName">1 × Pass</span>
+                                <span class="fw-bolder text-danger fs-6" id="modalTotalDisplay">₹ <?= number_format($startingPrice) ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Attendee Information -->
+                    <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5 border-top pt-3">
+                        <i data-lucide="user-check" class="text-danger" style="width:16px;height:16px;"></i>
+                        2. Attendee Contact Details
+                    </h6>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="customer_name" class="form-control" placeholder="Attendee name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">WhatsApp Mobile <span class="text-danger">*</span></label>
+                            <input type="tel" name="phone" class="form-control" placeholder="+91 98765 43210" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-secondary">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" placeholder="name@domain.com" required>
+                        </div>
+
+                        <!-- Dynamic custom form fields if configured for this event -->
+                        <?php foreach ($formFields as $field): ?>
+                            <?php 
+                                $fkey = $field['field_key'];
+                                if (in_array($fkey, ['full_name', 'email_address', 'mobile_number', 'attendees_count'])) continue;
+                            ?>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">
+                                    <?= e($field['field_label']) ?>
+                                    <?php if (!empty($field['required'])): ?><span class="text-danger">*</span><?php endif; ?>
+                                </label>
+                                <?php if ($field['field_type'] === 'textarea'): ?>
+                                    <textarea name="custom_<?= e($fkey) ?>" class="form-control" rows="2" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>></textarea>
+                                <?php else: ?>
+                                    <input type="<?= e($field['field_type'] ?: 'text') ?>" name="custom_<?= e($fkey) ?>" class="form-control" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="text-muted text-xs text-center">
+                        <i data-lucide="shield-check" style="width:13px;height:13px;vertical-align:-2px;" class="text-success me-1"></i>
+                        Instant Verifiable Digital QR Pass will be issued upon completion.
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-top bg-light d-flex justify-content-between align-items-center py-3 px-4">
+                    <div>
+                        <div class="text-xs text-muted">Total Payable</div>
+                        <div class="fw-bolder fs-5 text-danger" id="modalBottomTotalDisplay">₹ <?= number_format($startingPrice) ?></div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger fw-bold px-4 shadow-sm d-inline-flex align-items-center gap-2">
+                            <span>Confirm & Book Passes</span>
+                            <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= SHARE MODAL ================= -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content shadow border-0 text-center p-4">
+            <h6 class="fw-bold mb-3 text-dark">Share this Event</h6>
+            <div class="d-flex justify-content-center gap-3 mb-4">
+                <a href="https://api.whatsapp.com/send?text=<?= urlencode($event['name'] . ' - Book your passes here: ' . $currentUrl) ?>" target="_blank" class="btn btn-success rounded-circle p-2.5 d-inline-flex align-items-center justify-content-center shadow-xs" title="WhatsApp">
+                    <i data-lucide="message-circle" style="width:20px;height:20px;"></i>
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($currentUrl) ?>" target="_blank" class="btn btn-primary rounded-circle p-2.5 d-inline-flex align-items-center justify-content-center shadow-xs" title="Facebook">
+                    <i data-lucide="facebook" style="width:20px;height:20px;"></i>
+                </a>
+                <a href="https://twitter.com/intent/tweet?text=<?= urlencode($event['name']) ?>&url=<?= urlencode($currentUrl) ?>" target="_blank" class="btn btn-dark rounded-circle p-2.5 d-inline-flex align-items-center justify-content-center shadow-xs" title="Twitter / X">
+                    <i data-lucide="twitter" style="width:20px;height:20px;"></i>
+                </a>
+            </div>
+            <div class="input-group">
+                <input type="text" id="shareUrlInput" class="form-control form-control-sm text-truncate" value="<?= e($currentUrl) ?>" readonly>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCopyShareUrl">Copy</button>
+            </div>
+            <div id="copySuccessMsg" class="text-success small mt-2 d-none">Link copied to clipboard!</div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MINIMAL FOOTER ================= -->
+<footer class="border-top py-4 bg-white mt-5">
+    <div class="container text-center text-muted small">
+        <p class="mb-1"><strong><?= e($event['name']) ?></strong> • Hosted by <?= e($client['company_name'] ?? $client['name']) ?></p>
+        <p class="mb-0 text-xs" style="font-size:12px;">Powered by <strong><?= e(APP_NAME) ?></strong> — <?= e(APP_TAGLINE) ?></p>
     </div>
 </footer>
 
-<!-- Public Terms & Conditions Modal -->
-<?php if (!empty($client['terms_and_conditions'])): ?>
-<div class="modal fade" id="publicTermsModal" tabindex="-1" aria-labelledby="publicTermsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content shadow border-0">
-            <div class="modal-header border-bottom bg-light">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="publicTermsLabel">
-                        <i data-lucide="file-text" class="text-danger" style="width:18px;height:18px;"></i>
-                        Terms & Conditions
-                    </h5>
-                    <div class="text-muted text-xs"><?= e($client['company_name'] ?? $client['name']) ?></div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4 rich-text-content">
-                <?= renderRichText($client['terms_and_conditions']) ?>
-            </div>
-            <div class="modal-footer border-top bg-light">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-<!-- Public Cancellation & Refund Policy Modal -->
-<?php if (!empty($client['cancellation_policy'])): ?>
-<div class="modal fade" id="publicRefundModal" tabindex="-1" aria-labelledby="publicRefundLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content shadow border-0">
-            <div class="modal-header border-bottom bg-light">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="publicRefundLabel">
-                        <i data-lucide="refresh-cw" class="text-danger" style="width:18px;height:18px;"></i>
-                        Cancellation & Refund Policy
-                    </h5>
-                    <div class="text-muted text-xs"><?= e($client['company_name'] ?? $client['name']) ?></div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4 rich-text-content">
-                <?= renderRichText($client['cancellation_policy']) ?>
-            </div>
-            <div class="modal-footer border-top bg-light">
-                <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
+<!-- Leaflet JS for Map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Bootstrap 5 Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+// Initialize Lucide Icons
 lucide.createIcons();
 
-function calculateBookingTotal() {
-    const pkgSelect = document.getElementById('bookingPackageSelect');
-    const countSelect = document.getElementById('passCountSelect');
-    if (!countSelect) return;
+// 1. Initialize Interactive Leaflet Map
+document.addEventListener("DOMContentLoaded", function() {
+    const lat = <?= json_encode($mapLat) ?>;
+    const lng = <?= json_encode($mapLng) ?>;
+    const venueName = <?= json_encode($event['venue_name']) ?>;
+
+    const map = L.map('eventMap', {
+        center: [lat, lng],
+        zoom: 15,
+        zoomControl: true,
+        scrollWheelZoom: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup("<b>" + venueName + "</b><br><?= addslashes(e($fullVenueAddress)) ?>").openPopup();
+});
+
+// 2. Toggle "Show More" / "Show Less" on About Section
+const btnToggleAbout = document.getElementById('btnToggleAbout');
+if (btnToggleAbout) {
+    btnToggleAbout.addEventListener('click', function() {
+        const collapsed = document.getElementById('aboutCollapsedText');
+        const full = document.getElementById('aboutFullText');
+        if (full.classList.contains('d-none')) {
+            full.classList.remove('d-none');
+            collapsed.classList.add('d-none');
+            this.textContent = 'Show Less';
+        } else {
+            full.classList.add('d-none');
+            collapsed.classList.remove('d-none');
+            this.textContent = 'Show More';
+        }
+    });
+}
+
+// 3. Ticket Booking Modal Selection & Live Total Calculation
+let currentSelectedPrice = <?= json_encode($startingPrice) ?>;
+let currentSelectedPkgName = 'Pass';
+
+function selectTicketPackage(id, price, name, cardElem) {
+    currentSelectedPrice = parseFloat(price) || 0;
+    currentSelectedPkgName = name;
     
-    const count = parseInt(countSelect.value) || 1;
-    let price = 0;
-    let name = 'Pass';
+    // Select radio
+    const radio = document.getElementById('pkg_radio_' + id);
+    if (radio) radio.checked = true;
+
+    // Toggle card styles
+    document.querySelectorAll('.ticket-pkg-card').forEach(c => c.classList.remove('active'));
+    if (cardElem) cardElem.classList.add('active');
+
+    updateModalTotals();
+}
+
+function changePassCount(delta) {
+    const input = document.getElementById('modalPassCountInput');
+    let val = parseInt(input.value) || 1;
+    val = Math.max(1, Math.min(10, val + delta));
+    input.value = val;
+    updateModalTotals();
+}
+
+function updateModalTotals() {
+    const input = document.getElementById('modalPassCountInput');
+    const count = parseInt(input.value) || 1;
+    const total = currentSelectedPrice * count;
     
-    if (pkgSelect && pkgSelect.selectedOptions && pkgSelect.selectedOptions.length > 0) {
-        const opt = pkgSelect.selectedOptions[0];
-        price = parseFloat(opt.getAttribute('data-price')) || 0;
-        name = opt.getAttribute('data-name') || 'Pass';
+    const formattedTotal = total > 0 ? ('₹ ' + total.toLocaleString('en-IN')) : 'Free';
+    
+    document.getElementById('modalSelectedPkgName').textContent = count + ' × ' + currentSelectedPkgName;
+    document.getElementById('modalTotalDisplay').textContent = formattedTotal;
+    document.getElementById('modalBottomTotalDisplay').textContent = formattedTotal;
+}
+
+// 4. Share Event Handler (Native Web Share + Modal Fallback)
+document.getElementById('btnShareCard').addEventListener('click', async function() {
+    const shareData = {
+        title: <?= json_encode($event['name']) ?>,
+        text: <?= json_encode($event['short_description'] ?? $event['name']) ?>,
+        url: <?= json_encode($currentUrl) ?>
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            // User cancelled or fallback
+        }
     } else {
-        price = <?= (float)($event['price_amount'] ?? 0) ?>;
-        name = <?= json_encode($event['price_label'] ?: 'Standard Pass') ?>;
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        shareModal.show();
     }
-    
-    const total = count * price;
-    const summaryText = document.getElementById('summaryText');
-    const summaryTotal = document.getElementById('summaryTotal');
-    
-    if (summaryText) {
-        summaryText.textContent = `${count} × ${name}`;
-    }
-    if (summaryTotal) {
-        summaryTotal.textContent = total > 0 ? `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 'Free Entry';
-    }
-}
+});
 
-function selectPackageForBooking(pkgId) {
-    const pkgSelect = document.getElementById('bookingPackageSelect');
-    if (pkgSelect) {
-        pkgSelect.value = pkgId;
-    }
-    calculateBookingTotal();
-    const section = document.getElementById('bookingSection');
-    if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', calculateBookingTotal);
+// Copy Share URL Button
+document.getElementById('btnCopyShareUrl').addEventListener('click', function() {
+    const copyInput = document.getElementById('shareUrlInput');
+    copyInput.select();
+    copyInput.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyInput.value).then(() => {
+        const msg = document.getElementById('copySuccessMsg');
+        msg.classList.remove('d-none');
+        setTimeout(() => msg.classList.add('d-none'), 3000);
+    });
+});
 </script>
+
 </body>
 </html>
