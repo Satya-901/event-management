@@ -640,6 +640,36 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
             border-color: var(--brand-red);
             background-color: #fef2f2;
         }
+
+        /* Booking Modal Scroll & Viewport Discipline */
+        #bookingModal.modal {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        #bookingModal .modal-dialog {
+            max-width: 720px;
+            margin: 1.75rem auto;
+            max-height: calc(100vh - 3.5rem);
+            display: flex;
+        }
+        #bookingModal .modal-content {
+            max-height: calc(100vh - 3.5rem);
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+        #bookingModal .modal-body {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            flex: 1 1 auto;
+            overscroll-behavior: contain;
+        }
+        #bookingModal .modal-header,
+        #bookingModal .modal-footer {
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -906,7 +936,9 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 <!-- ================= TICKET BOOKING MODAL ================= -->
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
+        <form method="POST" action="<?= e($_SERVER['REQUEST_URI']) ?>" id="eventBookingForm" class="modal-content border-0 shadow">
+            <?= csrfInput() ?>
+            <input type="hidden" name="action" value="book_event">
             
             <div class="modal-header border-bottom py-3 px-4 bg-light">
                 <div>
@@ -919,11 +951,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form method="POST" action="<?= e($_SERVER['REQUEST_URI']) ?>" id="eventBookingForm">
-                <?= csrfInput() ?>
-                <input type="hidden" name="action" value="book_event">
-
-                <div class="modal-body p-4">
+            <div class="modal-body p-4">
                     
                     <!-- 1. Select Ticket Pass Package -->
                     <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5">
@@ -1126,7 +1154,6 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                 </div>
 
             </form>
-
         </div>
     </div>
 </div>
