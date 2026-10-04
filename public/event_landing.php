@@ -1279,7 +1279,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 
                     <div class="p-2.5 bg-light rounded-3 border small text-muted d-flex align-items-center gap-2">
                         <i data-lucide="info" class="text-danger flex-shrink-0" style="width:16px;height:16px;"></i>
-                        <span style="font-size:12px;">Aap alag-alag categories ke multiple passes ek saath choose kar sakte hain. Click <strong>Continue</strong> to proceed.</span>
+                        <span style="font-size:12px;">You can select multiple pass categories or quantities for your group. Click <strong>Continue</strong> to proceed.</span>
                     </div>
                 </div>
 
@@ -1304,15 +1304,15 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                     <div class="row g-3 mb-2">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="customer_name" id="inputCustomerName" class="form-control" placeholder="Attendee full name" required>
+                            <input type="text" name="customer_name" id="inputCustomerName" class="form-control" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">WhatsApp Mobile <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" id="inputPhone" class="form-control font-monospace" placeholder="+91 98765 43210" required>
+                            <input type="tel" name="phone" id="inputPhone" class="form-control font-monospace" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold text-secondary">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" name="email" id="inputEmail" class="form-control" placeholder="attendee@domain.com" required>
+                            <input type="email" name="email" id="inputEmail" class="form-control" required>
                             <div class="form-text text-xs">Official entry QR pass will be emailed to this address once verified.</div>
                         </div>
 
@@ -1328,9 +1328,9 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                                     <?php if (!empty($field['required'])): ?><span class="text-danger">*</span><?php endif; ?>
                                 </label>
                                 <?php if ($field['field_type'] === 'textarea'): ?>
-                                    <textarea name="custom_<?= e($fkey) ?>" class="form-control" rows="2" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>></textarea>
+                                    <textarea name="custom_<?= e($fkey) ?>" class="form-control" rows="2" <?= !empty($field['required']) ? 'required' : '' ?>></textarea>
                                 <?php else: ?>
-                                    <input type="<?= e($field['field_type'] ?: 'text') ?>" name="custom_<?= e($fkey) ?>" class="form-control" placeholder="<?= e($field['placeholder'] ?? '') ?>" <?= !empty($field['required']) ? 'required' : '' ?>>
+                                    <input type="<?= e($field['field_type'] ?: 'text') ?>" name="custom_<?= e($fkey) ?>" class="form-control" <?= !empty($field['required']) ? 'required' : '' ?>>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
@@ -1491,15 +1491,15 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 p-2.5 rounded-3 mb-0 mt-3 text-start">
                                 <div class="d-flex align-items-center gap-1.5 fw-bold text-dark small mb-1">
                                     <i data-lucide="info" class="text-warning flex-shrink-0" style="width:16px;height:16px;"></i>
-                                    <span>PhonePe "Limit ₹2,000 via Gallery" Guide:</span>
+                                    <span>PhonePe Gallery QR Notice:</span>
                                 </div>
                                 <div class="text-xs text-dark" style="font-size:11.5px;line-height:1.5;">
-                                    Agar aapne QR code ka screenshot leke PhonePe Gallery me scan kiya hai aur popup dikhe <em>"You can pay up to ₹2,000 with QR codes via gallery"</em>:
+                                    If you scanned a screenshot using PhonePe Gallery and see <em>"You can pay up to ₹2,000 with QR codes via gallery"</em>:
                                     <ul class="ps-3 my-1">
-                                        <li><strong>₹2,000 tak ke pass ke liye:</strong> PhonePe me niche <strong>"DISMISS"</strong> dabayein aur apna UPI PIN daal kar pay karein.</li>
-                                        <li><strong>Warning & Limit Bypass karne ke liye:</strong> Upar diye gaye <strong>"Pay with PhonePe / Google Pay"</strong> button par tap karein — direct app khulega bina kisi limit ke!</li>
+                                        <li><strong>For transactions up to ₹2,000:</strong> Tap <strong>"DISMISS"</strong> in PhonePe and enter your UPI PIN to finish payment.</li>
+                                        <li><strong>To bypass gallery limits completely:</strong> Use the direct <strong>"Pay with PhonePe / Google Pay"</strong> button above.</li>
                                         <?php if (!empty($organizerMobile)): ?>
-                                            <li><strong>Ya direct Phone Number par bhejein:</strong> PhonePe me "To Mobile Number" me <code><?= e($organizerMobile) ?></code> daal kar pay karein.</li>
+                                            <li><strong>Or pay via Mobile Number:</strong> In PhonePe, select "To Mobile Number" and enter <code><?= e($organizerMobile) ?></code>.</li>
                                         <?php endif; ?>
                                     </ul>
                                 </div>
@@ -1514,7 +1514,7 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted font-monospace"><i data-lucide="hash" style="width:14px;height:14px;"></i></span>
-                                <input type="text" name="utr_number" id="modalUtrInput" class="form-control font-monospace" placeholder="e.g. 427819003841" minlength="6" maxlength="30" <?= ($startingPrice > 0) ? 'required' : '' ?>>
+                                <input type="text" name="utr_number" id="modalUtrInput" class="form-control font-monospace" minlength="6" maxlength="30" <?= ($startingPrice > 0) ? 'required' : '' ?>>
                             </div>
                             <div class="text-muted text-xs mt-1">
                                 <i data-lucide="info" style="width:12px;height:12px;vertical-align:-1px;"></i>

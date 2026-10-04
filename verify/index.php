@@ -177,7 +177,7 @@ if ($booking && $event && $isVerified) {
                     </div>
                     <h5 class="fw-bold text-dark mb-1">Pass Locked: Verification in Progress</h5>
                     <p class="text-muted small mb-0 px-2" style="line-height:1.5;">
-                        Aapka payment reference receive ho gaya hai. Organizer ya Admin dwara UTR match karke verify karte hi <strong>Official QR Entry Ticket</strong> yahan unlock ho jayega aur aapke email par bhej diya jayega.
+                        Your payment reference has been submitted. Once the organizer verifies your UTR transaction, your <strong>Official QR Entry Ticket</strong> will automatically unlock here and be sent to your email.
                     </p>
                 </div>
 

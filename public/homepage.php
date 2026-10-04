@@ -808,7 +808,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="user" style="width:16px;height:16px;"></i></span>
-                                    <input type="text" name="organizer_name" class="form-control border-start-0 py-2.5 fs-6" placeholder="Full name of event director or coordinator" required>
+                                    <input type="text" name="organizer_name" class="form-control border-start-0 py-2.5 fs-6" required>
                                 </div>
                             </div>
 
@@ -819,7 +819,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="phone" style="width:16px;height:16px;"></i></span>
-                                    <input type="tel" name="phone" class="form-control border-start-0 py-2.5 fs-6" placeholder="Direct phone number with country code" required>
+                                    <input type="tel" name="phone" class="form-control border-start-0 py-2.5 fs-6" required>
                                 </div>
                                 <span class="text-muted" style="font-size: 11px;">Our operations team will call this number to finalize event parameters.</span>
                             </div>
@@ -831,7 +831,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="calendar" style="width:16px;height:16px;"></i></span>
-                                    <input type="text" name="event_title" class="form-control border-start-0 py-2" placeholder="Title of your festival, conference, or concert" required>
+                                    <input type="text" name="event_title" class="form-control border-start-0 py-2" required>
                                 </div>
                             </div>
 
@@ -842,7 +842,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="map-pin" style="width:16px;height:16px;"></i></span>
-                                    <input type="text" name="venue_city" class="form-control border-start-0 py-2" placeholder="City or venue name">
+                                    <input type="text" name="venue_city" class="form-control border-start-0 py-2">
                                 </div>
                             </div>
 
@@ -1132,7 +1132,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="user" style="width:15px;height:15px;"></i></span>
-                                <input type="text" name="organizer_name" class="form-control border-start-0 py-2" placeholder="Full name of organizer or event manager" required>
+                                <input type="text" name="organizer_name" class="form-control border-start-0 py-2" required>
                             </div>
                         </div>
 
@@ -1142,7 +1142,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="phone" style="width:15px;height:15px;"></i></span>
-                                <input type="tel" name="phone" class="form-control border-start-0 py-2" placeholder="Direct mobile number with country code" required>
+                                <input type="tel" name="phone" class="form-control border-start-0 py-2" required>
                             </div>
                             <span class="text-muted" style="font-size: 11px;">Our operations team will call this number to discuss your event requirements.</span>
                         </div>
@@ -1153,7 +1153,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="calendar" style="width:15px;height:15px;"></i></span>
-                                <input type="text" name="event_title" class="form-control border-start-0 py-2" placeholder="Title of your event or festival" required>
+                                <input type="text" name="event_title" class="form-control border-start-0 py-2" required>
                             </div>
                         </div>
 
@@ -1163,7 +1163,7 @@ require_once __DIR__ . '/../includes/csrf.php';
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 text-muted"><i data-lucide="map-pin" style="width:15px;height:15px;"></i></span>
-                                <input type="text" name="venue_city" class="form-control border-start-0 py-2" placeholder="City or venue location">
+                                <input type="text" name="venue_city" class="form-control border-start-0 py-2">
                             </div>
                         </div>
 
