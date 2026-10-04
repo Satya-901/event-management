@@ -55,24 +55,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
             }
 
-            // Dynamic package resolution
-            $pkgId = trim($_POST['package_id'] ?? '');
-            $selectedPackage = null;
-            if (!empty($event['packages']) && is_array($event['packages'])) {
-                foreach ($event['packages'] as $p) {
-                    if (($p['id'] ?? '') === $pkgId) {
-                        $selectedPackage = $p;
-                        break;
+            // Dynamic multi-package resolution
+            $selectedPackagesList = [];
+            $totalPassCount = 0;
+            $totalAmount = 0.0;
+            $primaryPkgId = null;
+
+            // 1. Check if JSON payload was sent
+            if (!empty($_POST['selected_packages_json'])) {
+                $decoded = json_decode($_POST['selected_packages_json'], true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $item) {
+                        $qty = max(0, (int)($item['qty'] ?? 0));
+                        $pid = trim($item['id'] ?? '');
+                        if ($qty > 0 && !empty($pid)) {
+                            $found = false;
+                            foreach (($event['packages'] ?? []) as $p) {
+                                if (($p['id'] ?? '') === $pid) {
+                                    $price = (float)($p['price'] ?? 0);
+                                    $totalPassCount += $qty;
+                                    $totalAmount += ($price * $qty);
+                                    $selectedPackagesList[] = [
+                                        'id' => $p['id'],
+                                        'name' => $p['name'],
+                                        'price' => $price,
+                                        'qty' => $qty,
+                                        'subtotal' => $price * $qty
+                                    ];
+                                    if (!$primaryPkgId) $primaryPkgId = $p['id'];
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                            if (!$found && $pid === 'default') {
+                                $price = (float)($event['price_amount'] ?? 0);
+                                $totalPassCount += $qty;
+                                $totalAmount += ($price * $qty);
+                                $selectedPackagesList[] = [
+                                    'id' => 'default',
+                                    'name' => 'Standard Entry Pass',
+                                    'price' => $price,
+                                    'qty' => $qty,
+                                    'subtotal' => $price * $qty
+                                ];
+                                if (!$primaryPkgId) $primaryPkgId = 'default';
+                            }
+                        }
                     }
-                }
-                if (!$selectedPackage && !empty($event['packages'][0])) {
-                    $selectedPackage = $event['packages'][0];
                 }
             }
 
-            $pkgName = $selectedPackage['name'] ?? ($event['price_label'] ?: 'Standard Pass');
-            $pkgPrice = (float)($selectedPackage['price'] ?? ($event['price_amount'] ?? 0));
-            $totalAmount = $pkgPrice * $passCount;
+            // 2. Check package_qty associative array
+            if (empty($selectedPackagesList) && !empty($_POST['package_qty']) && is_array($_POST['package_qty'])) {
+                foreach ($_POST['package_qty'] as $pid => $qtyVal) {
+                    $qty = max(0, (int)$qtyVal);
+                    if ($qty > 0) {
+                        $pid = trim((string)$pid);
+                        foreach (($event['packages'] ?? []) as $p) {
+                            if (($p['id'] ?? '') === $pid) {
+                                $price = (float)($p['price'] ?? 0);
+                                $totalPassCount += $qty;
+                                $totalAmount += ($price * $qty);
+                                $selectedPackagesList[] = [
+                                    'id' => $p['id'],
+                                    'name' => $p['name'],
+                                    'price' => $price,
+                                    'qty' => $qty,
+                                    'subtotal' => $price * $qty
+                                ];
+                                if (!$primaryPkgId) $primaryPkgId = $p['id'];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback to legacy single package
+            if (empty($selectedPackagesList)) {
+                $pkgId = trim($_POST['package_id'] ?? '');
+                $selectedPackage = null;
+                if (!empty($event['packages']) && is_array($event['packages'])) {
+                    foreach ($event['packages'] as $p) {
+                        if (($p['id'] ?? '') === $pkgId) {
+                            $selectedPackage = $p;
+                            break;
+                        }
+                    }
+                    if (!$selectedPackage && !empty($event['packages'][0])) {
+                        $selectedPackage = $event['packages'][0];
+                    }
+                }
+
+                $passCount = max(1, (int)($_POST['pass_count'] ?? 1));
+                $pkgName = $selectedPackage['name'] ?? ($event['price_label'] ?: 'Standard Pass');
+                $pkgPrice = (float)($selectedPackage['price'] ?? ($event['price_amount'] ?? 0));
+                $totalPassCount = $passCount;
+                $totalAmount = $pkgPrice * $passCount;
+                $primaryPkgId = $selectedPackage['id'] ?? 'default';
+                $selectedPackagesList[] = [
+                    'id' => $primaryPkgId,
+                    'name' => $pkgName,
+                    'price' => $pkgPrice,
+                    'qty' => $passCount,
+                    'subtotal' => $totalAmount
+                ];
+            }
+
+            if ($totalPassCount < 1) {
+                throw new Exception("Please select at least 1 pass to continue.");
+            }
+
+            $summaryNames = [];
+            foreach ($selectedPackagesList as $sp) {
+                $summaryNames[] = $sp['qty'] . ' × ' . $sp['name'];
+            }
+            $finalPkgName = implode(', ', $summaryNames);
+            $firstPkgPrice = $selectedPackagesList[0]['price'] ?? 0;
             $utrNumber = trim($_POST['utr_number'] ?? '');
 
             if ($totalAmount > 0) {
@@ -90,15 +189,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'customer_name' => $customerName,
                 'email' => $email,
                 'phone' => $phone,
-                'pass_count' => $passCount,
-                'package_id' => $selectedPackage['id'] ?? null,
-                'package_name' => $pkgName,
-                'package_price' => $pkgPrice,
+                'pass_count' => $totalPassCount,
+                'package_id' => $primaryPkgId,
+                'package_name' => $finalPkgName,
+                'package_price' => $firstPkgPrice,
                 'total_amount' => $totalAmount,
                 'utr_number' => $utrNumber,
                 'payment_method' => 'upi',
                 'payment_status' => ($totalAmount > 0) ? 'pending_verification' : 'free',
-                'status' => ($totalAmount > 0) ? 'pending' : 'confirmed'
+                'status' => ($totalAmount > 0) ? 'pending' : 'confirmed',
+                'packages_breakdown' => $selectedPackagesList
             ];
 
             $newBooking = BookingService::createBooking($bookingData, $answers);
@@ -127,6 +227,14 @@ $organizerUpiId = trim($client['upi_id'] ?? '');
 $organizerUpiName = trim($client['upi_name'] ?? ($client['company_name'] ?? $client['name'] ?? ''));
 $organizerCustomQr = trim($client['upi_qr_code'] ?? '');
 $hasUpiConfigured = !empty($organizerUpiId);
+
+// Extract 10-digit mobile number if present in UPI ID (e.g. 8874268474@pthdfc) or client profile
+$organizerMobile = '';
+if (preg_match('/^([6-9]\d{9})@/i', $organizerUpiId, $matches)) {
+    $organizerMobile = $matches[1];
+} elseif (!empty($client['mobile']) && preg_match('/^[6-9]\d{9}$/', trim($client['mobile']))) {
+    $organizerMobile = trim($client['mobile']);
+}
 
 // Formatted Date & Time Strings
 $startDateRaw = strtotime($event['start_date'] ?? date('Y-m-d'));
@@ -1067,74 +1175,111 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
 
             <div class="modal-body p-4">
                 
-                <!-- ================= STEP 1: PASS CATEGORY & QUANTITY ================= -->
+                <!-- ================= STEP 1: CHOOSE YOUR PASS CATEGORY (MULTI-SELECT SUPPORTED) ================= -->
                 <div id="bookingStep1" class="booking-step">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
-                            <i data-lucide="layers" class="text-danger" style="width:16px;height:16px;"></i>
-                            Step 1: Choose Your Pass Category
-                        </h6>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                                <i data-lucide="layers" class="text-danger" style="width:16px;height:16px;"></i>
+                                Step 1: Choose Your Pass Category
+                            </h6>
+                            <div class="text-muted text-xs mt-0.5">Select multiple categories or quantities according to your group</div>
+                        </div>
                         <span class="badge bg-light text-secondary border text-xs">Step 1 of 3</span>
                     </div>
+
+                    <!-- Hidden input storing JSON of selected packages -->
+                    <input type="hidden" name="selected_packages_json" id="selectedPackagesJsonInput" value="">
+                    <input type="hidden" name="pass_count" id="modalPassCountInput" value="1">
 
                     <?php if (!empty($packages) && is_array($packages)): ?>
                         <div class="row g-2 mb-3" id="packageListContainer">
                             <?php foreach ($packages as $idx => $pkg): ?>
-                                <?php $isSelected = ($idx === 0); ?>
+                                <?php 
+                                    $initQty = ($idx === 0) ? 1 : 0;
+                                    $isSelected = ($initQty > 0);
+                                ?>
                                 <div class="col-md-6">
-                                    <div class="ticket-pkg-card <?= $isSelected ? 'active' : '' ?>" onclick="selectTicketPackage('<?= e($pkg['id']) ?>', <?= (float)$pkg['price'] ?>, '<?= e(addslashes($pkg['name'])) ?>', this)">
+                                    <div class="ticket-pkg-card <?= $isSelected ? 'active' : '' ?>" id="pkg_card_<?= e($pkg['id']) ?>" onclick="toggleCardSelection('<?= e($pkg['id']) ?>', event)">
                                         <div class="d-flex justify-content-between align-items-start mb-1">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <input type="radio" name="package_id" value="<?= e($pkg['id']) ?>" id="pkg_radio_<?= e($pkg['id']) ?>" class="form-check-input mt-0" <?= $isSelected ? 'checked' : '' ?>>
-                                                <span class="fw-bold text-dark small"><?= e($pkg['name']) ?></span>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <input type="checkbox" id="pkg_check_<?= e($pkg['id']) ?>" class="form-check-input mt-1 pkg-checkbox" <?= $isSelected ? 'checked' : '' ?> onclick="onCheckboxClick('<?= e($pkg['id']) ?>', this.checked, event)">
+                                                <div>
+                                                    <span class="fw-bold text-dark small d-block"><?= e($pkg['name']) ?></span>
+                                                    <div class="text-muted text-xs"><?= e($pkg['description'] ?? 'General Entry') ?></div>
+                                                </div>
                                             </div>
                                             <?php if (!empty($pkg['badge'])): ?>
-                                                <span class="badge bg-danger text-white rounded-pill text-xs"><?= e($pkg['badge']) ?></span>
+                                                <span class="badge bg-danger text-white rounded-pill text-xs flex-shrink-0"><?= e($pkg['badge']) ?></span>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <span class="text-muted text-xs"><?= e($pkg['description'] ?? 'General Entry') ?></span>
-                                            <span class="fw-bolder fs-6 text-danger">₹ <?= number_format($pkg['price']) ?></span>
+
+                                        <div class="d-flex justify-content-between align-items-center mt-2.5 pt-2 border-top border-light">
+                                            <div>
+                                                <span class="fw-bolder fs-6 text-danger">₹ <?= number_format($pkg['price']) ?></span>
+                                                <span class="text-muted text-xs">/ pass</span>
+                                            </div>
+
+                                            <!-- Individual Stepper Counter for Each Package -->
+                                            <div class="d-inline-flex align-items-center bg-white border rounded-2 shadow-2xs" onclick="event.stopPropagation()">
+                                                <button type="button" class="btn btn-sm btn-light py-0.5 px-2 text-secondary fw-bold border-0 rounded-start" onclick="changePackageQty('<?= e($pkg['id']) ?>', -1)">−</button>
+                                                <input type="number" id="pkg_qty_<?= e($pkg['id']) ?>" name="package_qty[<?= e($pkg['id']) ?>]" class="form-control form-control-sm text-center fw-bold p-0 border-0 bg-transparent font-monospace" style="width:36px;font-size:13px;" value="<?= $initQty ?>" min="0" max="99" oninput="onQtyInput('<?= e($pkg['id']) ?>', this.value)">
+                                                <button type="button" class="btn btn-sm btn-light py-0.5 px-2 text-danger fw-bold border-0 rounded-end" onclick="changePackageQty('<?= e($pkg['id']) ?>', 1)">+</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="ticket-pkg-card active mb-3" onclick="selectTicketPackage('default', <?= (float)$event['price_amount'] ?>, 'Standard Pass', this)">
+                        <!-- Single / Default Event Pass -->
+                        <div class="ticket-pkg-card active mb-3" id="pkg_card_default">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="radio" name="package_id" value="default" class="form-check-input mt-0" checked>
-                                    <span class="fw-bold text-dark">Standard Entry Pass</span>
+                                    <input type="checkbox" id="pkg_check_default" class="form-check-input mt-0" checked disabled>
+                                    <div>
+                                        <span class="fw-bold text-dark d-block">Standard Entry Pass</span>
+                                        <div class="text-muted text-xs">Access to main event arena</div>
+                                    </div>
                                 </div>
-                                <span class="fw-bolder fs-5 text-danger">
-                                    <?= (float)$event['price_amount'] > 0 ? '₹ ' . number_format($event['price_amount']) : 'Free' ?>
-                                </span>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bolder fs-5 text-danger">
+                                        <?= (float)$event['price_amount'] > 0 ? '₹ ' . number_format($event['price_amount']) : 'Free' ?>
+                                    </span>
+                                    <div class="d-inline-flex align-items-center bg-white border rounded-2 shadow-2xs">
+                                        <button type="button" class="btn btn-sm btn-light py-0.5 px-2 text-secondary fw-bold border-0 rounded-start" onclick="changePackageQty('default', -1)">−</button>
+                                        <input type="number" id="pkg_qty_default" name="package_qty[default]" class="form-control form-control-sm text-center fw-bold p-0 border-0 bg-transparent font-monospace" style="width:36px;font-size:13px;" value="1" min="1" max="99" oninput="onQtyInput('default', this.value)">
+                                        <button type="button" class="btn btn-sm btn-light py-0.5 px-2 text-danger fw-bold border-0 rounded-end" onclick="changePackageQty('default', 1)">+</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     <?php endif; ?>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Number of Passes</label>
-                            <div class="input-group">
-                                <button type="button" class="btn btn-outline-secondary px-3" onclick="changePassCount(-1)">-</button>
-                                <input type="number" name="pass_count" id="modalPassCountInput" class="form-control text-center fw-bold fs-6" value="1" min="1" step="1" placeholder="1">
-                                <button type="button" class="btn btn-outline-secondary px-3" onclick="changePassCount(1)">+</button>
-                            </div>
+                    <!-- Selection Summary Box -->
+                    <div class="card bg-light border p-3 rounded-3 mb-3 shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="small fw-bold text-dark d-flex align-items-center gap-1.5">
+                                <i data-lucide="shopping-cart" style="width:14px;height:14px;" class="text-danger"></i>
+                                <span>Selected Passes Summary</span>
+                            </span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" id="totalPassCountBadge">1 Pass</span>
                         </div>
-                        <div class="col-sm-6">
-                            <label class="form-label small fw-semibold text-secondary">Selection Summary</label>
-                            <div class="p-2 border rounded-2 bg-light d-flex justify-content-between align-items-center" style="height:38px;">
-                                <span class="small text-muted" id="modalSelectedPkgName">1 × Pass</span>
-                                <span class="fw-bolder text-danger fs-6" id="modalTotalDisplay">₹ <?= number_format($startingPrice) ?></span>
-                            </div>
+
+                        <!-- Dynamic Selected Packages Breakdown -->
+                        <div id="selectedPackagesBreakdownList" class="d-flex flex-column gap-1 mb-2">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="text-xs text-muted text-uppercase fw-semibold" style="letter-spacing:0.5px;">Total Amount</span>
+                            <div class="fw-bolder fs-5 text-danger" id="modalTotalDisplay">₹ <?= number_format($startingPrice) ?></div>
                         </div>
                     </div>
 
-                    <div class="p-3 bg-light rounded-3 border small text-muted d-flex align-items-center gap-2">
+                    <div class="p-2.5 bg-light rounded-3 border small text-muted d-flex align-items-center gap-2">
                         <i data-lucide="info" class="text-danger flex-shrink-0" style="width:16px;height:16px;"></i>
-                        <span>Select your category and passes quantity. Click <strong>Continue</strong> to proceed to Attendee Details.</span>
+                        <span style="font-size:12px;">Aap alag-alag categories ke multiple passes ek saath choose kar sakte hain. Click <strong>Continue</strong> to proceed.</span>
                     </div>
                 </div>
 
@@ -1221,47 +1366,143 @@ $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                             </div>
                         </div>
                     <?php else: ?>
-                        <!-- VALID UPI CONFIGURED: Real QR & Payee details -->
-                        <div class="card p-3 border-danger border-opacity-25 bg-danger bg-opacity-10 rounded-3 mb-3">
-                            <div class="row align-items-center g-3">
-                                <!-- Dynamic QR Code Box for exact amount -->
-                                <div class="col-sm-5 text-center">
-                                    <div class="bg-white p-2 rounded-3 border d-inline-block shadow-xs">
-                                        <img id="modalUpiQrImage" src="<?= !empty($organizerCustomQr) ? e($organizerCustomQr) : ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode('upi://pay?pa=' . $organizerUpiId . '&pn=' . urlencode($organizerUpiName) . '&am=' . $startingPrice . '&cu=INR&tn=' . urlencode($event['name']))) ?>" alt="UPI QR Code" style="width:145px;height:145px;display:block;">
+                        <!-- VALID UPI CONFIGURED: Direct App Intent, QR, and Instructions -->
+                        <div class="card p-3 border-danger border-opacity-25 bg-light rounded-3 mb-3">
+                            <!-- Payee & Amount Highlight -->
+                            <div class="d-flex align-items-center justify-content-between p-2.5 bg-white rounded-3 border mb-3">
+                                <div>
+                                    <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;font-size:10px;">Payee / Organizer</span>
+                                    <div class="fw-bold text-dark small text-truncate" style="max-width:210px;"><?= e($organizerUpiName) ?></div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;font-size:10px;">Amount to Pay</span>
+                                    <div class="fw-bolder fs-5 text-danger" id="upiAmountBox">₹ <?= number_format($startingPrice) ?></div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Mode Switcher Tabs -->
+                            <ul class="nav nav-pills nav-fill gap-1 bg-white p-1 rounded-3 border mb-3" id="paymentTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active py-1.5 px-2 text-xs fw-bold rounded-2 d-flex align-items-center justify-content-center gap-1.5" id="tab-app-pay" data-bs-toggle="pill" data-bs-target="#panel-app-pay" type="button" role="tab">
+                                        <i data-lucide="smartphone" style="width:14px;height:14px;"></i>
+                                        <span>Pay on this Phone</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1.5 px-2 text-xs fw-bold rounded-2 d-flex align-items-center justify-content-center gap-1.5" id="tab-qr-pay" data-bs-toggle="pill" data-bs-target="#panel-qr-pay" type="button" role="tab">
+                                        <i data-lucide="qr-code" style="width:14px;height:14px;"></i>
+                                        <span>Scan QR Code</span>
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="paymentTabsContent">
+                                <!-- TAB 1: Direct 1-Click UPI Apps on Phone -->
+                                <div class="tab-pane fade show active" id="panel-app-pay" role="tabpanel">
+                                    <div class="text-xs text-muted text-center mb-2.5">
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                            ⚡ Recommended for Mobile Users (No Screenshot Needed)
+                                        </span>
                                     </div>
-                                    <div class="text-xs text-muted mt-1 font-monospace" style="font-size:11px;">Scan with Any UPI App</div>
+
+                                    <div class="d-grid gap-2 mb-3">
+                                        <!-- PhonePe Direct -->
+                                        <button type="button" class="btn text-white fw-bold py-2 px-3 rounded-3 d-flex align-items-center justify-content-between shadow-xs" style="background-color: #5f259f;" onclick="openUpiApp('phonepe')">
+                                            <span class="d-flex align-items-center gap-2">
+                                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                                    <circle cx="12" cy="12" r="12" fill="#5f259f"/>
+                                                    <path d="M14.8 7.5h-4.3c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h1.7v-3.7h2.6c2.2 0 3.7-1.3 3.7-3.2 0-1.8-1.5-3.1-3.7-3.1zm-.2 4.3h-2.4V9.3h2.4c1.1 0 1.8.6 1.8 1.2 0 .7-.7 1.3-1.8 1.3z" fill="#ffffff"/>
+                                                </svg>
+                                                <span>Pay with PhonePe</span>
+                                            </span>
+                                            <span class="badge bg-white text-dark text-xs px-2 py-1 font-monospace">1-Click</span>
+                                        </button>
+
+                                        <!-- Google Pay Direct -->
+                                        <button type="button" class="btn text-white fw-bold py-2 px-3 rounded-3 d-flex align-items-center justify-content-between shadow-xs" style="background-color: #1f1f1f;" onclick="openUpiApp('gpay')">
+                                            <span class="d-flex align-items-center gap-2">
+                                                <svg viewBox="0 0 24 24" width="20" height="20">
+                                                    <rect width="24" height="24" rx="4" fill="#ffffff"/>
+                                                    <path d="M12 9.2v2.8h4.5c-.2 1.2-1.3 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-5s2.2-5 4.9-5c1.5 0 2.6.7 3.2 1.2l2.2-2.1C16 3.3 14.2 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12s4.3 9.5 9.5 9.5c5.5 0 9.2-3.9 9.2-9.3 0-.6-.1-1.1-.2-1.5H12z" fill="#4285F4"/>
+                                                </svg>
+                                                <span>Pay with Google Pay</span>
+                                            </span>
+                                            <span class="badge bg-white text-dark text-xs px-2 py-1 font-monospace">1-Click</span>
+                                        </button>
+
+                                        <!-- Paytm Direct -->
+                                        <button type="button" class="btn text-white fw-bold py-2 px-3 rounded-3 d-flex align-items-center justify-content-between shadow-xs" style="background-color: #002e6e;" onclick="openUpiApp('paytm')">
+                                            <span class="d-flex align-items-center gap-2">
+                                                <span class="fw-black fs-6" style="letter-spacing:-0.5px;">Paytm</span>
+                                                <span class="small fw-normal">UPI</span>
+                                            </span>
+                                            <span class="badge bg-white text-dark text-xs px-2 py-1 font-monospace">1-Click</span>
+                                        </button>
+
+                                        <!-- Generic Any UPI App -->
+                                        <button type="button" class="btn btn-outline-dark fw-bold py-2 px-3 rounded-3 d-flex align-items-center justify-content-between bg-white shadow-xs" onclick="openUpiApp('upi')">
+                                            <span class="d-flex align-items-center gap-2">
+                                                <i data-lucide="credit-card" style="width:16px;height:16px;"></i>
+                                                <span>Other UPI App (BHIM / Cred / Amazon Pay)</span>
+                                            </span>
+                                            <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <!-- UPI Details & Copy -->
-                                <div class="col-sm-7">
-                                    <div class="mb-2">
-                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Payee Name</span>
-                                        <div class="fw-bold text-dark small"><?= e($organizerUpiName) ?></div>
-                                    </div>
-                                    
-                                    <div class="mb-2">
-                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Receiver UPI ID / VPA</span>
-                                        <div class="d-flex align-items-center gap-2 mt-0.5">
-                                            <code class="fw-bold text-dark bg-white px-2 py-1 rounded border small font-monospace" id="textUpiVpa"><?= e($organizerUpiId) ?></code>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0.5 px-2 text-xs" id="btnCopyUpiId" title="Copy UPI ID">
-                                                Copy
-                                            </button>
+                                <!-- TAB 2: Dynamic QR Code Box for Desktop / Other Device -->
+                                <div class="tab-pane fade" id="panel-qr-pay" role="tabpanel">
+                                    <div class="text-center py-2">
+                                        <div class="bg-white p-2.5 rounded-3 border d-inline-block shadow-xs mb-2">
+                                            <img id="modalUpiQrImage" src="<?= !empty($organizerCustomQr) ? e($organizerCustomQr) : ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode('upi://pay?pa=' . $organizerUpiId . '&pn=' . urlencode($organizerUpiName) . '&am=' . $startingPrice . '&cu=INR&tn=' . urlencode($event['name']))) ?>" alt="UPI QR Code" style="width:160px;height:160px;display:block;">
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <span class="text-xs text-muted text-uppercase d-block fw-semibold" style="letter-spacing:0.5px;">Amount to Pay</span>
-                                        <div class="fw-bolder fs-5 text-danger" id="upiAmountBox">₹ <?= number_format($startingPrice) ?></div>
+                                        <div class="text-xs text-muted font-monospace mb-1">Scan using any UPI App camera</div>
+                                        <div class="text-xs text-muted" style="font-size:11px;">(Best when viewing on laptop/PC or using second phone)</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Mobile Direct Intent Button -->
-                            <div class="mt-3 pt-2 border-top border-danger border-opacity-25">
-                                <a id="directUpiAppBtn" href="upi://pay?pa=<?= urlencode($organizerUpiId) ?>&pn=<?= urlencode($organizerUpiName) ?>&am=<?= $startingPrice ?>&cu=INR&tn=<?= urlencode($event['name']) ?>" class="btn btn-outline-danger btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 py-2 bg-white">
-                                    <i data-lucide="smartphone" style="width:15px;height:15px;"></i>
-                                    <span>Open UPI App (GPay / PhonePe / Paytm / BHIM)</span>
-                                </a>
+                            <!-- Copyable UPI ID and Mobile Number Details -->
+                            <div class="p-2.5 bg-white rounded-3 border mt-1">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                    <div>
+                                        <span class="text-xs text-muted text-uppercase d-block" style="font-size:10px;">Receiver UPI ID / VPA</span>
+                                        <code class="fw-bold text-dark font-monospace small" id="textUpiVpa"><?= e($organizerUpiId) ?></code>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 text-xs fw-semibold" id="btnCopyUpiId">
+                                        Copy UPI ID
+                                    </button>
+                                </div>
+
+                                <?php if (!empty($organizerMobile)): ?>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="text-xs text-muted text-uppercase d-block" style="font-size:10px;">Payee Mobile Number (PhonePe/GPay)</span>
+                                            <code class="fw-bold text-dark font-monospace small" id="textPayeeMobile"><?= e($organizerMobile) ?></code>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 text-xs fw-semibold" id="btnCopyPayeeMobile">
+                                            Copy Number
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- PhonePe Gallery Notice (Directly addresses the user's reported popup) -->
+                            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10 p-2.5 rounded-3 mb-0 mt-3 text-start">
+                                <div class="d-flex align-items-center gap-1.5 fw-bold text-dark small mb-1">
+                                    <i data-lucide="info" class="text-warning flex-shrink-0" style="width:16px;height:16px;"></i>
+                                    <span>PhonePe "Limit ₹2,000 via Gallery" Guide:</span>
+                                </div>
+                                <div class="text-xs text-dark" style="font-size:11.5px;line-height:1.5;">
+                                    Agar aapne QR code ka screenshot leke PhonePe Gallery me scan kiya hai aur popup dikhe <em>"You can pay up to ₹2,000 with QR codes via gallery"</em>:
+                                    <ul class="ps-3 my-1">
+                                        <li><strong>₹2,000 tak ke pass ke liye:</strong> PhonePe me niche <strong>"DISMISS"</strong> dabayein aur apna UPI PIN daal kar pay karein.</li>
+                                        <li><strong>Warning & Limit Bypass karne ke liye:</strong> Upar diye gaye <strong>"Pay with PhonePe / Google Pay"</strong> button par tap karein — direct app khulega bina kisi limit ke!</li>
+                                        <?php if (!empty($organizerMobile)): ?>
+                                            <li><strong>Ya direct Phone Number par bhejein:</strong> PhonePe me "To Mobile Number" me <code><?= e($organizerMobile) ?></code> daal kar pay karein.</li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
@@ -1409,53 +1650,144 @@ if (btnToggleAbout) {
     });
 }
 
-// 3. Ticket Booking Multi-Step Form Logic & Live Calculations
+// 3. Ticket Booking Multi-Step Form Logic & Live Calculations (Multi-Package Selection Support)
 let currentStep = 1;
-let currentSelectedPrice = <?= json_encode($startingPrice) ?>;
-let currentSelectedPkgName = 'Pass';
+
+const availablePackages = <?= json_encode(!empty($packages) ? $packages : [[
+    'id' => 'default',
+    'name' => 'Standard Entry Pass',
+    'price' => (float)($event['price_amount'] ?? 0),
+    'description' => 'General Entry'
+]]) ?>;
+
+// State of quantities for each package: { [pkg_id]: count }
+let packageQuantities = {};
+availablePackages.forEach((pkg, index) => {
+    packageQuantities[pkg.id] = (index === 0) ? 1 : 0;
+});
+
+let currentTotalAmount = 0;
+let currentTotalPasses = 0;
+let currentSummaryString = '';
 
 const clientUpiId = <?= json_encode($organizerUpiId) ?>;
 const clientUpiName = <?= json_encode($organizerUpiName) ?>;
 const clientCustomQr = <?= json_encode($organizerCustomQr) ?>;
 const hasUpiConfigured = <?= json_encode($hasUpiConfigured) ?>;
 const currentEventName = <?= json_encode($event['name'] ?? 'Event') ?>;
+const clientMobile = <?= json_encode($organizerMobile) ?>;
 
-function selectTicketPackage(id, price, name, cardElem) {
-    currentSelectedPrice = parseFloat(price) || 0;
-    currentSelectedPkgName = name;
-    
-    // Select radio
-    const radio = document.getElementById('pkg_radio_' + id);
-    if (radio) radio.checked = true;
-
-    // Toggle card styles
-    document.querySelectorAll('.ticket-pkg-card').forEach(c => c.classList.remove('active'));
-    if (cardElem) cardElem.classList.add('active');
-
-    updateModalTotals();
+function changePackageQty(pkgId, delta) {
+    const current = packageQuantities[pkgId] || 0;
+    const next = Math.max(0, current + delta);
+    setPackageQty(pkgId, next);
 }
 
-function changePassCount(delta) {
-    const input = document.getElementById('modalPassCountInput');
-    let val = parseInt(input.value) || 1;
-    val = Math.max(1, val + delta);
-    input.value = val;
+function onQtyInput(pkgId, val) {
+    let next = parseInt(val);
+    if (isNaN(next) || next < 0) next = 0;
+    setPackageQty(pkgId, next);
+}
+
+function onCheckboxClick(pkgId, isChecked, evt) {
+    if (evt) evt.stopPropagation();
+    if (isChecked) {
+        if (!packageQuantities[pkgId] || packageQuantities[pkgId] <= 0) {
+            setPackageQty(pkgId, 1);
+        }
+    } else {
+        setPackageQty(pkgId, 0);
+    }
+}
+
+function toggleCardSelection(pkgId, evt) {
+    const current = packageQuantities[pkgId] || 0;
+    if (current <= 0) {
+        setPackageQty(pkgId, 1);
+    }
+}
+
+function setPackageQty(pkgId, qty) {
+    packageQuantities[pkgId] = qty;
+    
+    // Update input
+    const input = document.getElementById('pkg_qty_' + pkgId);
+    if (input) input.value = qty;
+
+    // Update checkbox
+    const check = document.getElementById('pkg_check_' + pkgId);
+    if (check) check.checked = (qty > 0);
+
+    // Update card styling
+    const card = document.getElementById('pkg_card_' + pkgId);
+    if (card) {
+        card.classList.toggle('active', qty > 0);
+    }
+
     updateModalTotals();
 }
 
 function updateModalTotals() {
-    const input = document.getElementById('modalPassCountInput');
-    let count = parseInt(input.value);
-    if (isNaN(count) || count < 1) {
-        count = 1;
+    let totalPasses = 0;
+    let totalAmount = 0;
+    const selectedList = [];
+
+    availablePackages.forEach(pkg => {
+        const qty = packageQuantities[pkg.id] || 0;
+        if (qty > 0) {
+            const price = parseFloat(pkg.price) || 0;
+            const subtotal = price * qty;
+            totalPasses += qty;
+            totalAmount += subtotal;
+            selectedList.push({
+                id: pkg.id,
+                name: pkg.name,
+                price: price,
+                qty: qty,
+                subtotal: subtotal
+            });
+        }
+    });
+
+    currentTotalPasses = totalPasses;
+    currentTotalAmount = totalAmount;
+
+    // Hidden inputs for form submit
+    const hiddenJson = document.getElementById('selectedPackagesJsonInput');
+    if (hiddenJson) hiddenJson.value = JSON.stringify(selectedList);
+
+    const hiddenPassCount = document.getElementById('modalPassCountInput');
+    if (hiddenPassCount) hiddenPassCount.value = totalPasses;
+
+    // Human-readable summary string: e.g. "1 × Female Stag Entry, 2 × Couple Pass"
+    if (selectedList.length > 0) {
+        currentSummaryString = selectedList.map(item => item.qty + ' × ' + item.name).join(', ');
+    } else {
+        currentSummaryString = 'No passes selected';
     }
-    const total = currentSelectedPrice * count;
-    
-    const formattedTotal = total > 0 ? ('₹ ' + total.toLocaleString('en-IN')) : 'Free';
-    const summaryText = count + ' × ' + currentSelectedPkgName;
-    
-    const modalSelectedPkg = document.getElementById('modalSelectedPkgName');
-    if (modalSelectedPkg) modalSelectedPkg.textContent = summaryText;
+
+    const formattedTotal = totalAmount > 0 ? ('₹ ' + totalAmount.toLocaleString('en-IN')) : (totalPasses > 0 ? 'Free' : '₹ 0');
+
+    // Update Badge
+    const badge = document.getElementById('totalPassCountBadge');
+    if (badge) {
+        badge.textContent = totalPasses + ' Pass' + (totalPasses !== 1 ? 'es' : '');
+    }
+
+    // Update dynamic breakdown list in Step 1
+    const breakdownContainer = document.getElementById('selectedPackagesBreakdownList');
+    if (breakdownContainer) {
+        if (selectedList.length > 0) {
+            breakdownContainer.innerHTML = selectedList.map(item => `
+                <div class="d-flex justify-content-between align-items-center text-xs text-dark py-0.5">
+                    <span class="text-secondary fw-semibold">${item.qty} × ${item.name}</span>
+                    <span class="fw-bold font-monospace">${item.subtotal > 0 ? '₹ ' + item.subtotal.toLocaleString('en-IN') : 'Free'}</span>
+                </div>
+            `).join('');
+        } else {
+            breakdownContainer.innerHTML = '<div class="text-danger small fst-italic">Please select at least 1 pass to continue.</div>';
+        }
+    }
 
     const modalTotalDisp = document.getElementById('modalTotalDisplay');
     if (modalTotalDisp) modalTotalDisp.textContent = formattedTotal;
@@ -1464,7 +1796,7 @@ function updateModalTotals() {
     if (modalBottomDisp) modalBottomDisp.textContent = formattedTotal;
 
     const step2Pass = document.getElementById('step2SummaryPass');
-    if (step2Pass) step2Pass.textContent = summaryText;
+    if (step2Pass) step2Pass.textContent = currentSummaryString;
 
     const step2Total = document.getElementById('step2SummaryTotal');
     if (step2Total) step2Total.textContent = formattedTotal;
@@ -1474,12 +1806,12 @@ function updateModalTotals() {
 
     const utrInput = document.getElementById('modalUtrInput');
     if (utrInput) {
-        utrInput.required = (total > 0 && hasUpiConfigured);
+        utrInput.required = (totalAmount > 0 && hasUpiConfigured);
     }
 
     const btnStep2Proceed = document.getElementById('btnStep2Proceed');
     if (btnStep2Proceed) {
-        if (total > 0) {
+        if (totalAmount > 0) {
             btnStep2Proceed.innerHTML = '<span>Proceed to Payment &rarr;</span>';
             btnStep2Proceed.setAttribute('onclick', 'goToStep(3)');
         } else {
@@ -1488,19 +1820,15 @@ function updateModalTotals() {
         }
     }
 
-    // Dynamic QR Update if UPI is configured
-    if (hasUpiConfigured && total > 0) {
+    // Dynamic QR & Pay Links Update if UPI is configured
+    if (hasUpiConfigured && totalAmount > 0) {
         const qrImg = document.getElementById('modalUpiQrImage');
-        const intentBtn = document.getElementById('directUpiAppBtn');
 
         const upiUri = 'upi://pay?pa=' + encodeURIComponent(clientUpiId) +
                        '&pn=' + encodeURIComponent(clientUpiName) +
-                       '&am=' + total +
+                       '&am=' + totalAmount +
                        '&cu=INR&tn=' + encodeURIComponent(currentEventName);
 
-        if (intentBtn) {
-            intentBtn.href = upiUri;
-        }
         if (qrImg) {
             if (clientCustomQr) {
                 qrImg.src = clientCustomQr;
@@ -1511,15 +1839,44 @@ function updateModalTotals() {
     }
 }
 
+// Open specific UPI application directly (Bypasses gallery screenshot limit)
+function openUpiApp(appType) {
+    if (currentTotalAmount <= 0 || !clientUpiId) return;
+
+    const params = 'pa=' + encodeURIComponent(clientUpiId) +
+                   '&pn=' + encodeURIComponent(clientUpiName) +
+                   '&am=' + encodeURIComponent(currentTotalAmount) +
+                   '&cu=INR' +
+                   '&tn=' + encodeURIComponent(currentEventName);
+
+    let targetUri = 'upi://pay?' + params;
+    if (appType === 'phonepe') {
+        targetUri = 'phonepe://pay?' + params;
+    } else if (appType === 'gpay') {
+        targetUri = 'tez://upi/pay?' + params;
+    } else if (appType === 'paytm') {
+        targetUri = 'paytmmp://pay?' + params;
+    }
+
+    // Launch targeted intent
+    window.location.href = targetUri;
+
+    // Fallback to standard upi:// chooser if app is not installed
+    if (appType !== 'upi') {
+        setTimeout(function() {
+            if (!document.hidden) {
+                window.location.href = 'upi://pay?' + params;
+            }
+        }, 1200);
+    }
+}
+
 // Multi-Step Form Navigation Controller
 function goToStep(step) {
     if (step === 2) {
-        // Validate Step 1: Pass count
-        const passCountInput = document.getElementById('modalPassCountInput');
-        const passCount = parseInt(passCountInput.value);
-        if (isNaN(passCount) || passCount < 1) {
-            alert('Please select at least 1 pass.');
-            passCountInput.focus();
+        // Validate Step 1: Ensure at least 1 pass selected across all categories
+        if (currentTotalPasses < 1) {
+            alert('Please select at least 1 pass category to continue.');
             return;
         }
     } else if (step === 3) {
@@ -1534,9 +1891,7 @@ function goToStep(step) {
             }
         }
 
-        const passCount = parseInt(document.getElementById('modalPassCountInput').value) || 1;
-        const total = currentSelectedPrice * passCount;
-        if (total <= 0) {
+        if (currentTotalAmount <= 0) {
             submitBookingForm();
             return;
         }
@@ -1597,24 +1952,9 @@ function submitBookingForm() {
     if (form) form.submit();
 }
 
-// Live typing & validation for pass count (allows any number of passes without limit)
 document.addEventListener("DOMContentLoaded", function() {
-    const passInput = document.getElementById('modalPassCountInput');
-    if (passInput) {
-        passInput.addEventListener('input', function() {
-            let val = parseInt(this.value);
-            if (!isNaN(val) && val >= 1) {
-                updateModalTotals();
-            }
-        });
-        passInput.addEventListener('change', function() {
-            let val = parseInt(this.value);
-            if (isNaN(val) || val < 1) {
-                this.value = 1;
-            }
-            updateModalTotals();
-        });
-    }
+    // Initial calculation of packages and modal totals
+    updateModalTotals();
 
     const btnCopyUpi = document.getElementById('btnCopyUpiId');
     if (btnCopyUpi && clientUpiId) {
@@ -1626,6 +1966,21 @@ document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(() => {
                     btnCopyUpi.textContent = originalText;
                     btnCopyUpi.classList.replace('btn-success', 'btn-outline-secondary');
+                }, 2000);
+            });
+        });
+    }
+
+    const btnCopyMobile = document.getElementById('btnCopyPayeeMobile');
+    if (btnCopyMobile && clientMobile) {
+        btnCopyMobile.addEventListener('click', function() {
+            navigator.clipboard.writeText(clientMobile).then(() => {
+                const originalText = btnCopyMobile.textContent;
+                btnCopyMobile.textContent = 'Copied!';
+                btnCopyMobile.classList.replace('btn-outline-secondary', 'btn-success');
+                setTimeout(() => {
+                    btnCopyMobile.textContent = originalText;
+                    btnCopyMobile.classList.replace('btn-success', 'btn-outline-secondary');
                 }, 2000);
             });
         });
